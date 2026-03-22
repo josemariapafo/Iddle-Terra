@@ -37,7 +37,7 @@ Shader "Custom/Atmosfera"
             fixed4 frag(v2f i) : SV_Target
             {
                 float rim = 1.0 - saturate(dot(normalize(i.viewDir), normalize(i.normal)));
-                float alpha = pow(rim, 3.0) * _Intensidad;
+                float alpha = pow(rim, 5.0) * _Intensidad;
                 return fixed4(_Color.rgb, alpha);
             }
             ENDCG
