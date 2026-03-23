@@ -507,50 +507,50 @@ MonoBehaviour:
     descripcion: 
     texturaDia: {fileID: 2800000, guid: 05b2037a276fb6047a7ae6037b76729a, type: 3}
     texturaNoche: {fileID: 0}
-    atmosferaIntensidad: 1.5
+    atmosferaIntensidad: 0
     atmosferaColor: {r: 0.4, g: 0.6, b: 1, a: 1}
   - nombre: "Primeros Oc\xE9anos"
     descripcion: 
     texturaDia: {fileID: 2800000, guid: ccda5bdb4ea2d0c4081ae64e8e96e1bc, type: 3}
     texturaNoche: {fileID: 0}
-    atmosferaIntensidad: 1.5
-    atmosferaColor: {r: 0.4, g: 0.6, b: 1, a: 1}
+    atmosferaIntensidad: 0.005
+    atmosferaColor: {r: 0.6, g: 0.34901962, b: 0.14901961, a: 1}
   - nombre: Vida Marina
     descripcion: 
     texturaDia: {fileID: 2800000, guid: 5b328437b9c944444b512d976956b1c5, type: 3}
     texturaNoche: {fileID: 0}
-    atmosferaIntensidad: 1.5
+    atmosferaIntensidad: 0.008
     atmosferaColor: {r: 0.4, g: 0.6, b: 1, a: 1}
   - nombre: Pangea
     descripcion: 
     texturaDia: {fileID: 2800000, guid: f2c20db8bb41e9b4fa0e5031ec33c9cc, type: 3}
     texturaNoche: {fileID: 0}
-    atmosferaIntensidad: 1.5
+    atmosferaIntensidad: 0.008
     atmosferaColor: {r: 0.4, g: 0.6, b: 1, a: 1}
   - nombre: "Jur\xE1sico"
     descripcion: 
     texturaDia: {fileID: 2800000, guid: ea032990c480ac84cb0a9a17d8b99bb5, type: 3}
     texturaNoche: {fileID: 0}
-    atmosferaIntensidad: 1.5
-    atmosferaColor: {r: 0.4, g: 0.6, b: 1, a: 1}
+    atmosferaIntensidad: 0.009
+    atmosferaColor: {r: 0.35, g: 0.6, b: 1, a: 1}
   - nombre: "Civilizaci\xF3n Primitiva"
     descripcion: 
     texturaDia: {fileID: 2800000, guid: c016e7c95aaeb524fa9f37dac8f81db9, type: 3}
     texturaNoche: {fileID: 2800000, guid: be19c2a4b7cb1da4ea3bf03bfcf9489c, type: 3}
-    atmosferaIntensidad: 1.5
+    atmosferaIntensidad: 0.01
     atmosferaColor: {r: 0.4, g: 0.6, b: 1, a: 1}
   - nombre: "Civilizaci\xF3n Avanzada"
     descripcion: 
     texturaDia: {fileID: 2800000, guid: 470a868687d94a94c84846f53fe810b7, type: 3}
     texturaNoche: {fileID: 2800000, guid: 53d0cae489a4a1b45b9f2e84091e1a8d, type: 3}
-    atmosferaIntensidad: 1.5
-    atmosferaColor: {r: 0.4, g: 0.6, b: 1, a: 1}
+    atmosferaIntensidad: 0.01
+    atmosferaColor: {r: 0.45, g: 0.58, b: 0.9, a: 1}
   - nombre: Era Espacial
     descripcion: 
     texturaDia: {fileID: 2800000, guid: 25bb1b3b202891d4cbb99163cfd9f3df, type: 3}
     texturaNoche: {fileID: 2800000, guid: c6d5ff8f4ad9976419dca4e09d935495, type: 3}
-    atmosferaIntensidad: 1.5
-    atmosferaColor: {r: 0.4, g: 0.6, b: 1, a: 1}
+    atmosferaIntensidad: 0.01
+    atmosferaColor: {r: 0.4, g: 0.65, b: 1, a: 1}
   planetaRenderer: {fileID: 334027380}
   atmosferaRenderer: {fileID: 1250975275}
   _eraActual: 0

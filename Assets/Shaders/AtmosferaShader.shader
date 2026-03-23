@@ -4,6 +4,7 @@ Shader "Custom/Atmosfera"
     {
         _Color ("Color", Color) = (0.4, 0.6, 1.0, 1.0)
         _Intensidad ("Intensidad", Range(0,3)) = 1.5
+        _Agudeza ("Rim Sharpness", Range(3,12)) = 8.0
     }
     SubShader
     {
@@ -24,6 +25,7 @@ Shader "Custom/Atmosfera"
 
             fixed4 _Color;
             float _Intensidad;
+            float _Agudeza;
 
             v2f vert(appdata v)
             {
@@ -37,7 +39,7 @@ Shader "Custom/Atmosfera"
             fixed4 frag(v2f i) : SV_Target
             {
                 float rim = 1.0 - saturate(dot(normalize(i.viewDir), normalize(i.normal)));
-                float alpha = pow(rim, 5.0) * _Intensidad;
+                float alpha = pow(rim, _Agudeza) * _Intensidad;
                 return fixed4(_Color.rgb, alpha);
             }
             ENDCG
