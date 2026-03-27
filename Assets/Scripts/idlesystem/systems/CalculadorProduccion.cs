@@ -30,15 +30,19 @@ namespace Terra.Systems
         /// <summary>
         /// Calcula EV/s completo con todas las capas multiplicadoras.
         /// </summary>
+        // Producción base mínima — garantiza que el juego siempre avanza
+        // aunque el jugador no haya comprado ninguna mejora todavía
+        private const double PRODUCCION_BASE_MINIMA = 0.5;
+
         public double Calcular(EstadoJuego estado)
         {
-            double base_    = CalcularBaseProduccion(estado);
+            double base_     = System.Math.Max(CalcularBaseProduccion(estado), PRODUCCION_BASE_MINIMA);
             double sinergias = CalcularMultiplicadorSinergias(estado);
-            double nodos    = CalcularMultiplicadorNodos(estado);
-            double prestige = estado.Prestige.MultiplicadorTotal;
-            double evento   = estado.MultiplicadorEvento;
-            double racha    = estado.Racha.MultiplicadorRacha;
-            double nocturno = CalcularBonusNocturno();
+            double nodos     = CalcularMultiplicadorNodos(estado);
+            double prestige  = estado.Prestige.MultiplicadorTotal;
+            double evento    = estado.MultiplicadorEvento;
+            double racha     = estado.Racha.MultiplicadorRacha;
+            double nocturno  = CalcularBonusNocturno();
 
             return base_ * sinergias * nodos * prestige * evento * racha * nocturno;
         }

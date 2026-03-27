@@ -38,7 +38,6 @@ public class Estrellas : MonoBehaviour
             // Color blanco con brillo aleatorio
             float brillo = Random.Range(0.6f, 1.0f);
             r.material.color = new Color(brillo, brillo, brillo, 1f);
-            r.material.SetColor("_Emission", new Color(brillo, brillo, brillo));
         }
     }
 }

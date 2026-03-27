@@ -118,7 +118,7 @@ namespace Terra.Data.Catalogos
             new DefinicionEvento("ev_04","Florecimiento marino",  "+200% Vida durante 60s si Océanos > Lv20",       TipoEvento.Positivo, 3, 3.0f, 60,  15, TipoPilar.Oceanos,   false),
             new DefinicionEvento("ev_05","Glaciación menor",      "Penaliza 30s pero da Fósiles extra al final",    TipoEvento.Negativo, 3, 0.5f, 30,  25, TipoPilar.Oceanos,   true),
             new DefinicionEvento("ev_06","Supervolcán",           "×5 Tierra 60s pero bloquea Vida temporalmente",  TipoEvento.Neutral,  4, 5.0f, 60,  30, TipoPilar.Tierra,    true),
-            new DefinicionEvento("ev_07","Impacto asteroide",     "Gasta 50% de tu EV para ×10 durante 30s",        TipoEvento.Neutral,  4, 10.0f,30,  30, TipoPilar.Atmó,      true),
+            new DefinicionEvento("ev_07","Impacto asteroide",     "Gasta 50% de tu EV para ×10 durante 30s",        TipoEvento.Neutral,  4, 10.0f,30,  30, TipoPilar.Atmosfera, true),
             new DefinicionEvento("ev_08","Explosión cámbrica",    "×4 Vida durante 90s — solo Era 3+",              TipoEvento.Positivo, 3, 4.0f, 90,  20, TipoPilar.Vida,      false),
             new DefinicionEvento("ev_09","Corriente de El Niño",  "×2 Océanos + Tierra durante 60s",                TipoEvento.Positivo, 4, 2.0f, 60,  15, TipoPilar.Oceanos,   false),
             new DefinicionEvento("ev_10","Plaga",                 "Penaliza Vida 50% durante 30s",                  TipoEvento.Negativo, 5, 0.5f, 30,  20, TipoPilar.Vida,      true),
