@@ -1,11 +1,15 @@
 ﻿using UnityEngine;
 
+/// <summary>
+/// PlanetaInteraccion — rota el planeta al arrastrar.
+/// Usa InputManager si existe, funciona solo si no.
+/// </summary>
 public class PlanetaInteraccion : MonoBehaviour
 {
-    [Header("Rotación automática")]
+    [Header("Rotacion automatica")]
     public float velocidadAutoRotacion = 5f;
 
-    [Header("Control táctil")]
+    [Header("Control tactil")]
     public float sensibilidadTouch = 0.3f;
     public float inercia = 0.95f;
 
@@ -15,20 +19,21 @@ public class PlanetaInteraccion : MonoBehaviour
 
     void Update()
     {
-        // ── PC: Mouse ─────────────────────────────────────────────
+        bool esArrastre = InputManager.Instance != null
+            ? InputManager.Instance.EsArrastre
+            : true; // si no hay InputManager, todo se trata como arrastre
+
+        // ── Mouse ─────────────────────────────────────────────────────────
         if (Input.GetMouseButtonDown(0))
         {
             _arrastrando = true;
             _posicionAnterior = Input.mousePosition;
             _velocidadRotacion = Vector3.zero;
         }
-
         if (Input.GetMouseButtonUp(0))
-        {
             _arrastrando = false;
-        }
 
-        if (_arrastrando && Input.GetMouseButton(0))
+        if (_arrastrando && Input.GetMouseButton(0) && esArrastre)
         {
             Vector3 delta = Input.mousePosition - _posicionAnterior;
             _velocidadRotacion = new Vector3(delta.y, -delta.x, 0) * sensibilidadTouch;
@@ -36,36 +41,26 @@ public class PlanetaInteraccion : MonoBehaviour
             _posicionAnterior = Input.mousePosition;
         }
 
-        // ── Mobile: Touch ──────────────────────────────────────────
+        // ── Touch ─────────────────────────────────────────────────────────
         if (Input.touchCount == 1)
         {
-            Touch touch = Input.GetTouch(0);
-
-            if (touch.phase == TouchPhase.Began)
+            Touch t = Input.GetTouch(0);
+            if (t.phase == TouchPhase.Began)
             {
                 _arrastrando = true;
                 _velocidadRotacion = Vector3.zero;
             }
-
-            if (touch.phase == TouchPhase.Moved)
+            if (t.phase == TouchPhase.Moved && esArrastre)
             {
-                Vector3 delta = new Vector3(
-                    touch.deltaPosition.y,
-                   -touch.deltaPosition.x,
-                    0
-                ) * sensibilidadTouch;
-
+                Vector3 delta = new Vector3(t.deltaPosition.y, -t.deltaPosition.x, 0) * sensibilidadTouch;
                 _velocidadRotacion = delta;
                 transform.Rotate(_velocidadRotacion, Space.World);
             }
-
-            if (touch.phase == TouchPhase.Ended)
-            {
+            if (t.phase == TouchPhase.Ended)
                 _arrastrando = false;
-            }
         }
 
-        // ── Inercia — el planeta sigue girando al soltar ───────────
+        // ── Inercia ────────────────────────────────────────────────────────
         if (!_arrastrando)
         {
             if (_velocidadRotacion.magnitude > 0.001f)
@@ -75,7 +70,6 @@ public class PlanetaInteraccion : MonoBehaviour
             }
             else
             {
-                // Retomar rotación automática suavemente
                 transform.Rotate(0, velocidadAutoRotacion * Time.deltaTime, 0, Space.World);
             }
         }

@@ -8,18 +8,18 @@ namespace Terra.Data.Catalogos
     {
         public static DefinicionSinergia[] Crear() => new[]
         {
-            new DefinicionSinergia("sin_01","Ciclo del agua",       "+40% EV — Atmósfera y Océanos cooperan",       TipoPilar.Atmosfera,TipoPilar.Oceanos, 10,  10,  1.40),
-            new DefinicionSinergia("sin_02","Ecosistema primario",  "+60% EV — Tierra nutre a la Vida",             TipoPilar.Tierra,   TipoPilar.Vida,    10,  10,  1.60),
-            new DefinicionSinergia("sin_03","Fotosíntesis marina",  "+80% EV — Océanos y Vida producen O₂",        TipoPilar.Oceanos,  TipoPilar.Vida,    20,  20,  1.80),
-            new DefinicionSinergia("sin_04","Erosión fértil",       "+50% Nutrientes — Tierra y Océanos",          TipoPilar.Tierra,   TipoPilar.Oceanos, 20,  15,  1.50),
-            new DefinicionSinergia("sin_05","Selva tropical",       "×2 Biomasa — Tierra y Vida avanzadas",        TipoPilar.Tierra,   TipoPilar.Vida,    40,  35,  2.00),
-            new DefinicionSinergia("sin_06","Termorregulación",     "+70% EV global — Atmósfera y Tierra",         TipoPilar.Atmosfera,TipoPilar.Tierra,  30,  25,  1.70),
-            new DefinicionSinergia("sin_07","Gran Oxidación",       "×2.5 EV — Atmósfera y Vida producen O₂",     TipoPilar.Atmosfera,TipoPilar.Vida,    50,  45,  2.50),
-            new DefinicionSinergia("sin_08","Biosfera completa",    "×2.2 todo — Océanos y Tierra conectados",    TipoPilar.Oceanos,  TipoPilar.Tierra,  60,  60,  2.20),
-            new DefinicionSinergia("sin_09","Ciclo del carbono",    "×3 EV global — Atmósfera y Océanos",         TipoPilar.Atmosfera,TipoPilar.Oceanos, 80,  70,  3.00),
-            new DefinicionSinergia("sin_10","Red trófica global",   "×2.8 Vida — Vida y Océanos interconectados", TipoPilar.Vida,     TipoPilar.Oceanos, 80,  75,  2.80),
-            new DefinicionSinergia("sin_11","Geodiversidad",        "×3.5 Nutrientes — Tierra y Atmósfera",       TipoPilar.Tierra,   TipoPilar.Atmosfera,100, 90, 3.50),
-            new DefinicionSinergia("sin_12","GAIA",                 "×5 TODO — Los 4 pilares en armonía",         TipoPilar.Atmosfera,TipoPilar.Vida,    150, 150, 5.00, cuatroPilares: true),
+            new DefinicionSinergia("sin_01","Ciclo del agua",       "+40% EV — Atmósfera y Océanos cooperan",       TipoPilar.Atmosfera,TipoPilar.Oceanos,  5,   5,  1.40),
+            new DefinicionSinergia("sin_02","Ecosistema primario",  "+60% EV — Tierra nutre a la Vida",             TipoPilar.Tierra,   TipoPilar.Vida,     5,   5,  1.60),
+            new DefinicionSinergia("sin_03","Fotosíntesis marina",  "+80% EV — Océanos y Vida producen O₂",        TipoPilar.Oceanos,  TipoPilar.Vida,    12,  12,  1.80),
+            new DefinicionSinergia("sin_04","Erosión fértil",       "+50% Nutrientes — Tierra y Océanos",          TipoPilar.Tierra,   TipoPilar.Oceanos, 12,  10,  1.50),
+            new DefinicionSinergia("sin_05","Selva tropical",       "×2 Biomasa — Tierra y Vida avanzadas",        TipoPilar.Tierra,   TipoPilar.Vida,    25,  22,  2.00),
+            new DefinicionSinergia("sin_06","Termorregulación",     "+70% EV global — Atmósfera y Tierra",         TipoPilar.Atmosfera,TipoPilar.Tierra,  18,  15,  1.70),
+            new DefinicionSinergia("sin_07","Gran Oxidación",       "×2.5 EV — Atmósfera y Vida producen O₂",     TipoPilar.Atmosfera,TipoPilar.Vida,    32,  28,  2.50),
+            new DefinicionSinergia("sin_08","Biosfera completa",    "×2.2 todo — Océanos y Tierra conectados",    TipoPilar.Oceanos,  TipoPilar.Tierra,  40,  40,  2.20),
+            new DefinicionSinergia("sin_09","Ciclo del carbono",    "×3 EV global — Atmósfera y Océanos",         TipoPilar.Atmosfera,TipoPilar.Oceanos, 55,  48,  3.00),
+            new DefinicionSinergia("sin_10","Red trófica global",   "×2.8 Vida — Vida y Océanos interconectados", TipoPilar.Vida,     TipoPilar.Oceanos, 55,  52,  2.80),
+            new DefinicionSinergia("sin_11","Geodiversidad",        "×3.5 Nutrientes — Tierra y Atmósfera",       TipoPilar.Tierra,   TipoPilar.Atmosfera,70, 62, 3.50),
+            new DefinicionSinergia("sin_12","GAIA",                 "×5 TODO — Los 4 pilares en armonía",         TipoPilar.Atmosfera,TipoPilar.Vida,    110, 110, 5.00, cuatroPilares: true),
         };
     }
 
@@ -32,31 +32,31 @@ namespace Terra.Data.Catalogos
                 "era1_earth_day", ""),
 
             new DefinicionEra(2, "Primeros Océanos",      "El agua líquida cubre los primeros continentes",
-                new CondicionEra(5, 50_000),
+                new CondicionEra(5, 5_000),
                 "era2_earth_day", ""),
 
             new DefinicionEra(3, "Vida Marina",           "El mar explota con vida en la era Cámbrica",
-                new CondicionEra(15, 500_000, new[]{"sin_01"}),
+                new CondicionEra(12, 80_000, new[]{"sin_01"}),
                 "era3_earth_day", ""),
 
             new DefinicionEra(4, "Pangea",                "Un supercontinente único domina el planeta",
-                new CondicionEra(30, 5_000_000, new[]{"sin_02"}),
+                new CondicionEra(25, 800_000, new[]{"sin_02"}),
                 "era4_earth_day", ""),
 
             new DefinicionEra(5, "Jurásico",              "Los dinosaurios reinan sobre un planeta verde",
-                new CondicionEra(50, 50_000_000, new[]{"sin_03","sin_05"}),
+                new CondicionEra(40, 8_000_000, new[]{"sin_03","sin_05"}),
                 "era5_earth_day", ""),
 
             new DefinicionEra(6, "Civilización Primitiva","La humanidad da sus primeros pasos",
-                new CondicionEra(80, 500_000_000, new[]{"sin_07"}),
+                new CondicionEra(65, 80_000_000, new[]{"sin_07"}),
                 "earth_Day",     "earth_night"),
 
             new DefinicionEra(7, "Civilización Avanzada", "Las luces del progreso cubren el planeta",
-                new CondicionEra(120, 5_000_000_000, new[]{"sin_09","sin_11"}),
+                new CondicionEra(95, 800_000_000, new[]{"sin_09","sin_11"}),
                 "era7_earth_day","era7_earth_night"),
 
             new DefinicionEra(8, "Era Espacial",          "La humanidad trasciende los límites del planeta",
-                new CondicionEra(170, 50_000_000_000, new[]{"sin_12"}),
+                new CondicionEra(130, 8_000_000_000, new[]{"sin_12"}),
                 "era8_earth_day","era8_earth_night"),
         };
     }

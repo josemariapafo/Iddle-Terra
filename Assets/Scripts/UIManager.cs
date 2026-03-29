@@ -108,7 +108,7 @@ public class UIManager : MonoBehaviour
     // ══════════════════════════════════════════════════════════════════════
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this;
     }
 
@@ -144,9 +144,9 @@ public class UIManager : MonoBehaviour
     void ConfigurarBotones()
     {
         Btn_Atmosfera?.onClick.AddListener(() => AbrirCategoria(TipoPilar.Atmosfera));
-        Btn_Oceanos?.onClick.AddListener(()   => AbrirCategoria(TipoPilar.Oceanos));
-        Btn_Tierra?.onClick.AddListener(()    => AbrirCategoria(TipoPilar.Tierra));
-        Btn_Vida?.onClick.AddListener(()      => AbrirCategoria(TipoPilar.Vida));
+        Btn_Oceanos?.onClick.AddListener(() => AbrirCategoria(TipoPilar.Oceanos));
+        Btn_Tierra?.onClick.AddListener(() => AbrirCategoria(TipoPilar.Tierra));
+        Btn_Vida?.onClick.AddListener(() => AbrirCategoria(TipoPilar.Vida));
 
         Btn_Evolucionar?.onClick.AddListener(OnClickEvolucionar);
         Btn_CerrarCategoria?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
@@ -401,12 +401,12 @@ public class UIManager : MonoBehaviour
             Text_QuarksActuales.text = "Quarks: " + Formateador.Numero(p.Quarks)
                 + "  (x" + p.MultiplicadorQuarks.ToString("F2") + ")";
 
-        ActualizarBotonPrestige(Btn_Extincion,  Text_GananciaExtincion,
-            TipoPrestige.Extincion,  "Extincion",  "Fosiles", "Era 5+");
+        ActualizarBotonPrestige(Btn_Extincion, Text_GananciaExtincion,
+            TipoPrestige.Extincion, "Extincion", "Fosiles", "Era 5+");
         ActualizarBotonPrestige(Btn_Glaciacion, Text_GananciaGlaciacion,
-            TipoPrestige.Glaciacion, "Glaciacion", "Genes",   "Era 7+");
-        ActualizarBotonPrestige(Btn_BigBang,    Text_GananciaBigBang,
-            TipoPrestige.BigBang,    "Big Bang",   "Quarks",  "Era 8");
+            TipoPrestige.Glaciacion, "Glaciacion", "Genes", "Era 7+");
+        ActualizarBotonPrestige(Btn_BigBang, Text_GananciaBigBang,
+            TipoPrestige.BigBang, "Big Bang", "Quarks", "Era 8");
     }
 
     void ActualizarBotonPrestige(Button btn, TextMeshProUGUI texto,
@@ -492,7 +492,7 @@ public class UIManager : MonoBehaviour
         var evDef = GameController.Instance?.Eventos.ObtenerEventoActivo();
         if (evDef == null) return;
 
-        if (Text_NombreEvento != null)     Text_NombreEvento.text     = evDef.Nombre;
+        if (Text_NombreEvento != null) Text_NombreEvento.text = evDef.Nombre;
         if (Text_DescripcionEvento != null) Text_DescripcionEvento.text = evDef.Descripcion;
 
         Btn_AceptarEvento?.gameObject.SetActive(evDef.RequiereAccion);

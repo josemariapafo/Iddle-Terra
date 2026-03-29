@@ -203,6 +203,13 @@ namespace Terra.Controllers
         public void RechazarEvento()                 => Eventos.RechazarEvento();
         public bool ReclamarBonusDiario()            => Racha.ReclamarBonusDiario();
 
+        /// <summary>Aplica un multiplicador temporal de EV — usado por MeteoroManager.</summary>
+        public void AplicarEventoTemporal(float multiplicador, float duracionSegundos)
+        {
+            Estado.MultiplicadorEvento    = multiplicador;
+            Estado.TiempoRestanteEvento   = duracionSegundos;
+        }
+
         // ══════════════════════════════════════════════════════════════════
         // DEBUG (solo en editor)
         // ══════════════════════════════════════════════════════════════════
