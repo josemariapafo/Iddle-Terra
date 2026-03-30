@@ -4,24 +4,19 @@ using TMPro;
 using Terra.Controllers;
 using Terra.Core;
 
-/// <summary>
-/// TapManager v3 — completamente autocontenido, sin InputManager.
-/// Distingue tap de arrastre internamente.
-/// Los numeros flotantes usan TextMeshProUGUI en Canvas.
-/// </summary>
 public class TapManager : MonoBehaviour
 {
     [Header("Referencias")]
     public Collider coliderPlaneta;
     public Camera camaraPrincipal;
-    public Canvas canvasUI;                  // Canvas donde se muestran los numeros
+    public Canvas canvasUI;
 
     [Header("Prefab numero flotante (UI)")]
-    public GameObject Prefab_NumeroFlotante;    // Prefab con TextMeshProUGUI
+    public GameObject Prefab_NumeroFlotante;
 
     [Header("Tap")]
     public float segundosPorTap = 0.5f;
-    public float umbralArrastre = 12f;         // pixeles de movimiento para considerar arrastre
+    public float umbralArrastre = 12f;
 
     [Header("Combo")]
     public int tapsParaCombo = 10;
@@ -40,20 +35,15 @@ public class TapManager : MonoBehaviour
     public Color colorComboActivo = new Color(1f, 0.4f, 0f);
     public Color colorMeteoro = new Color(0.4f, 1f, 0.4f);
 
-    // ── Estado tap ────────────────────────────────────────────────────────
     private Vector2 _posicionInicio;
     private bool _presionando = false;
     private bool _esArrastre = false;
-
-    // ── Estado combo ──────────────────────────────────────────────────────
     private int _tapsCombo = 0;
     private float _timerResetCombo = 0f;
     private bool _comboActivo = false;
     private float _tiempoRestanteCombo = 0f;
-
     private MeteoroManager _meteoroManager;
 
-    // ══════════════════════════════════════════════════════════════════════
     void Start()
     {
         if (camaraPrincipal == null) camaraPrincipal = Camera.main;
@@ -71,13 +61,8 @@ public class TapManager : MonoBehaviour
         ProcesarInput();
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // INPUT — autocontenido, sin InputManager
-    // ══════════════════════════════════════════════════════════════════════
-
     void ProcesarInput()
     {
-        // ── Mouse ─────────────────────────────────────────────────────────
         if (Input.GetMouseButtonDown(0))
         {
             _presionando = true;
@@ -87,43 +72,32 @@ public class TapManager : MonoBehaviour
 
         if (_presionando && Input.GetMouseButton(0))
         {
-            float dist = Vector2.Distance(Input.mousePosition, _posicionInicio);
-            if (dist > umbralArrastre)
+            if (Vector2.Distance(Input.mousePosition, _posicionInicio) > umbralArrastre)
                 _esArrastre = true;
         }
 
         if (Input.GetMouseButtonUp(0) && _presionando)
         {
-            if (!_esArrastre)
-                EjecutarTap(Input.mousePosition);
-
+            if (!_esArrastre) EjecutarTap(Input.mousePosition);
             _presionando = false;
             _esArrastre = false;
         }
 
-        // ── Touch ─────────────────────────────────────────────────────────
         if (Input.touchCount == 1)
         {
             Touch t = Input.GetTouch(0);
-
             if (t.phase == TouchPhase.Began)
             {
                 _presionando = true;
                 _esArrastre = false;
                 _posicionInicio = t.position;
             }
-
-            if (t.phase == TouchPhase.Moved)
-            {
-                float dist = Vector2.Distance(t.position, _posicionInicio);
-                if (dist > umbralArrastre) _esArrastre = true;
-            }
-
+            if (t.phase == TouchPhase.Moved &&
+                Vector2.Distance(t.position, _posicionInicio) > umbralArrastre)
+                _esArrastre = true;
             if (t.phase == TouchPhase.Ended && _presionando)
             {
-                if (!_esArrastre)
-                    EjecutarTap(t.position);
-
+                if (!_esArrastre) EjecutarTap(t.position);
                 _presionando = false;
                 _esArrastre = false;
             }
@@ -134,7 +108,6 @@ public class TapManager : MonoBehaviour
     {
         Ray rayo = camaraPrincipal.ScreenPointToRay(posicionPantalla);
 
-        // 1. Intentar golpear meteorito
         if (_meteoroManager != null && _meteoroManager.IntentarGolpearMeteoro(rayo))
         {
             double evMeteoro = GameController.Instance?.Estado.EVPorSegundo * 2.0 ?? 0;
@@ -142,11 +115,9 @@ public class TapManager : MonoBehaviour
             return;
         }
 
-        // 2. Intentar tocar el planeta
         if (coliderPlaneta == null) return;
         if (!coliderPlaneta.Raycast(rayo, out RaycastHit hit, 20f)) return;
 
-        // Convertir punto 3D a posicion en pantalla
         Vector3 puntoEnPantalla = camaraPrincipal.WorldToScreenPoint(hit.point);
         TapearPlaneta(new Vector2(puntoEnPantalla.x, puntoEnPantalla.y));
     }
@@ -174,56 +145,57 @@ public class TapManager : MonoBehaviour
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // NUMEROS FLOTANTES — usa TextMeshProUGUI en Canvas
-    // ══════════════════════════════════════════════════════════════════════
-
     void MostrarNumero(Vector2 posicionPantalla, double cantidad, Color color, string prefijo = "+")
     {
         if (Prefab_NumeroFlotante == null)
         {
-            Debug.LogWarning("[TapManager] Prefab_NumeroFlotante no asignado.");
+            Debug.LogError("[TapManager] Prefab_NumeroFlotante es null");
             return;
         }
-        if (canvasUI == null) return;
-
-        // Instanciar en el canvas
-        GameObject obj = Instantiate(Prefab_NumeroFlotante, canvasUI.transform);
-
-        // Posicionar en espacio del canvas
-        RectTransform rect = obj.GetComponent<RectTransform>();
-        if (rect != null)
+        if (canvasUI == null)
         {
+            Debug.LogError("[TapManager] canvasUI es null");
+            return;
+        }
+
+        GameObject obj = Instantiate(Prefab_NumeroFlotante, canvasUI.transform);
+        Debug.Log($"[TapManager] Numero instanciado: {obj.name} en canvas {canvasUI.name}");
+
+        RectTransform rect = obj.GetComponent<RectTransform>();
+        if (rect == null)
+        {
+            // El prefab no tiene RectTransform — es un objeto 3D, no UI
+            // Colocarlo en world space encima del planeta
+            Debug.LogWarning("[TapManager] Prefab no tiene RectTransform, usando posicion 3D");
+            obj.transform.SetParent(null);
+            Ray rayo = camaraPrincipal.ScreenPointToRay(posicionPantalla);
+            if (coliderPlaneta != null && coliderPlaneta.Raycast(rayo, out RaycastHit hit, 20f))
+                obj.transform.position = hit.point + (hit.point - Vector3.zero).normalized * 0.3f;
+        }
+        else
+        {
+            // Es UI — posicionar en canvas
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasUI.GetComponent<RectTransform>(),
                 posicionPantalla,
                 canvasUI.renderMode == RenderMode.ScreenSpaceOverlay ? null : camaraPrincipal,
                 out Vector2 localPos);
 
-            // Offset aleatorio pequeno
-            localPos += new Vector2(Random.Range(-25f, 25f), Random.Range(10f, 40f));
+            localPos += new Vector2(Random.Range(-25f, 25f), Random.Range(20f, 50f));
             rect.anchoredPosition = localPos;
+            Debug.Log($"[TapManager] Posicion local en canvas: {localPos}");
         }
 
-        // Configurar texto y color
         var nf = obj.GetComponent<NumeroFlotante>();
         if (nf != null)
             nf.Configurar(prefijo + Formateador.Numero(cantidad), color);
         else
         {
-            // Fallback: buscar TextMeshProUGUI directamente
             var tmp = obj.GetComponentInChildren<TextMeshProUGUI>();
-            if (tmp != null)
-            {
-                tmp.text = prefijo + Formateador.Numero(cantidad);
-                tmp.color = color;
-            }
+            if (tmp != null) { tmp.text = prefijo + Formateador.Numero(cantidad); tmp.color = color; }
+            else Debug.LogError("[TapManager] No se encontro TextMeshProUGUI en el prefab");
         }
     }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // COMBO
-    // ══════════════════════════════════════════════════════════════════════
 
     void ActualizarComboTimers()
     {
@@ -237,7 +209,6 @@ public class TapManager : MonoBehaviour
                 if (Panel_Combo != null) Panel_Combo.SetActive(false);
             }
         }
-
         if (_comboActivo)
         {
             _tiempoRestanteCombo -= Time.deltaTime;
@@ -248,9 +219,7 @@ public class TapManager : MonoBehaviour
 
     void ActivarCombo()
     {
-        _comboActivo = true;
-        _tiempoRestanteCombo = duracionCombo;
-        _tapsCombo = 0;
+        _comboActivo = true; _tiempoRestanteCombo = duracionCombo; _tapsCombo = 0;
         if (Panel_Combo != null) Panel_Combo.SetActive(false);
         if (Text_ComboActivo != null) Text_ComboActivo.gameObject.SetActive(true);
         ActualizarUIComboActivo();
