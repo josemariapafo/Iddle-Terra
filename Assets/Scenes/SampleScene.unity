@@ -1745,6 +1745,7 @@ MonoBehaviour:
   velocidadAutoRotacion: 0
   sensibilidadTouch: 0.3
   inercia: 0.95
+  umbralArrastre: 12
 --- !u!1 &356499403
 GameObject:
   m_ObjectHideFlags: 0
@@ -3971,7 +3972,6 @@ GameObject:
   - component: {fileID: 745651880}
   - component: {fileID: 745651882}
   - component: {fileID: 745651883}
-  - component: {fileID: 745651886}
   - component: {fileID: 745651888}
   - component: {fileID: 745651887}
   - component: {fileID: 745651889}
@@ -4162,23 +4162,6 @@ MonoBehaviour:
   Panel_BonusDiario: {fileID: 233158749}
   Text_BonusDiario: {fileID: 774616231}
   Btn_ReclamarBonus: {fileID: 1264389913}
---- !u!114 &745651886
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 745651877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a244c63dbd73a6242b254bfff6fbe101, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  velocidadSubida: 120
-  duracionVida: 1.2
-  escalaInicial: 0.6
-  escalaMaxima: 1.2
-  tiempoEscalado: 0.15
 --- !u!114 &745651887
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4327,9 +4310,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   coliderPlaneta: {fileID: 334027379}
   camaraPrincipal: {fileID: 963194227}
+  canvasUI: {fileID: 788385536}
   Prefab_NumeroFlotante: {fileID: 524683707}
   segundosPorTap: 0.5
-  cooldownTap: 0.12
+  umbralArrastre: 12
   tapsParaCombo: 10
   duracionCombo: 3
   multiplicadorCombo: 2
