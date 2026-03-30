@@ -18,7 +18,7 @@ namespace Terra.Systems
 
         public SistemaSinergias(DefinicionSinergia[] defs, SistemaMejoras mejoras)
         {
-            _definiciones  = defs;
+            _definiciones = defs;
             _sistemaMejoras = mejoras;
         }
 
@@ -78,8 +78,8 @@ namespace Terra.Systems
         public SistemaEras(DefinicionEra[] defs,
             SistemaMejoras mejoras, SistemaSinergias sinergias)
         {
-            _definiciones     = defs;
-            _sistemaMejoras   = mejoras;
+            _definiciones = defs;
+            _sistemaMejoras = mejoras;
             _sistemaSinergias = sinergias;
         }
 
@@ -158,10 +158,10 @@ namespace Terra.Systems
 
         public bool PuedeHacer(TipoPrestige tipo) => tipo switch
         {
-            TipoPrestige.Extincion  => _estado.EraActual >= 5,
-            TipoPrestige.Glaciacion => _estado.EraActual >= 7,
-            TipoPrestige.BigBang    => _estado.EraActual >= 8,
-            _                       => false
+            TipoPrestige.Extincion => _estado.EraActual >= 3,
+            TipoPrestige.Glaciacion => _estado.EraActual >= 5,
+            TipoPrestige.BigBang => _estado.EraActual >= 7,
+            _ => false
         };
 
         public double GananciaEstimada(TipoPrestige tipo) =>
@@ -304,7 +304,7 @@ namespace Terra.Systems
 
         private TipoPrestige ObtenerPrestigeSugerido()
         {
-            if (_sistemaPrestige.PuedeHacer(TipoPrestige.BigBang))    return TipoPrestige.BigBang;
+            if (_sistemaPrestige.PuedeHacer(TipoPrestige.BigBang)) return TipoPrestige.BigBang;
             if (_sistemaPrestige.PuedeHacer(TipoPrestige.Glaciacion)) return TipoPrestige.Glaciacion;
             return TipoPrestige.Extincion;
         }

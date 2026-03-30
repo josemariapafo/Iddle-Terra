@@ -88,6 +88,20 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI Text_BonusDiario;
     public Button Btn_ReclamarBonus;
 
+    // ── Meta proxima ───────────────────────────────────────────────────────
+    [Header("Meta proxima visible")]
+    public GameObject Panel_MetaProxima;
+    public TextMeshProUGUI Text_MetaNombre;
+    public TextMeshProUGUI Text_MetaProgreso;
+    public Slider Slider_MetaProgreso;
+    public Button Btn_CerrarMeta;
+
+    private float _timerSinComprar = 0f;
+    private float _timerReaparicion = 0f;
+    private const float TIEMPO_SIN_COMPRAR = 30f;
+    private const float TIEMPO_REAPARICION = 30f;
+    private const float UMBRAL_PROGRESO = 0.8f;  // mejora al 80% alcanzada
+
     // ── Internas ──────────────────────────────────────────────────────────
     private TipoPilar _categoriaActual = TipoPilar.Atmosfera;
     private float _timerUI = 0f;
@@ -150,6 +164,7 @@ public class UIManager : MonoBehaviour
 
         Btn_Evolucionar?.onClick.AddListener(OnClickEvolucionar);
         Btn_CerrarCategoria?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+        Btn_CerrarMeta?.onClick.AddListener(CerrarMetaManual);
         Btn_AbrirPrestige?.onClick.AddListener(() => MostrarPantalla(Panel_Prestige));
         Btn_CerrarPrestige?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
 
@@ -223,6 +238,8 @@ public class UIManager : MonoBehaviour
 
         if (Indicador_Estancamiento != null)
             Indicador_Estancamiento.SetActive(gc.Estancamiento.EstaEstancado());
+
+        ActualizarMetaProxima();
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -525,6 +542,109 @@ public class UIManager : MonoBehaviour
     // ══════════════════════════════════════════════════════════════════════
     // UTILIDADES
     // ══════════════════════════════════════════════════════════════════════
+
+    // ══════════════════════════════════════════════════════════════════════
+    // META PROXIMA VISIBLE
+    // ══════════════════════════════════════════════════════════════════════
+
+    void ActualizarMetaProxima()
+    {
+        if (Panel_MetaProxima == null) return;
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        // Si ya esta visible solo refrescar texto
+        if (Panel_MetaProxima.activeSelf)
+        {
+            RefrescarTextoMeta();
+            return;
+        }
+
+        // Esperar reaparicion si fue cerrado manualmente
+        if (_timerReaparicion > 0) { _timerReaparicion -= INTERVALO_UI; return; }
+
+        // Acumular tiempo sin comprar
+        _timerSinComprar += INTERVALO_UI;
+        if (_timerSinComprar < TIEMPO_SIN_COMPRAR) return;
+
+        // Buscar la mejora mas cara que SE PUEDE comprar ahora
+        var meta = BuscarMetaProxima();
+        if (meta == null) return;
+
+        Panel_MetaProxima.SetActive(true);
+        RefrescarTextoMeta();
+    }
+
+    Terra.Data.DefinicionMejora BuscarMetaProxima()
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return null;
+
+        var estado = gc.Estado;
+        double evActual = estado.EnergiaVital;
+
+        // La mejora mas cara que SE PUEDE comprar ahora mismo
+        Terra.Data.DefinicionMejora mejoraCara = null;
+        double mayorCoste = -1;
+
+        foreach (TipoPilar pilar in System.Enum.GetValues(typeof(TipoPilar)))
+        {
+            foreach (var def in gc.Mejoras.ObtenerPorPilar(pilar))
+            {
+                if (!estado.MejoraDesbloqueada(def.Id)) continue;
+                int nivel = estado.NivelMejora(def.Id);
+                if (nivel >= def.NivelMax) continue;
+
+                double coste = def.CosteEnNivel(nivel);
+                if (coste > evActual) continue; // no se puede comprar
+
+                if (coste > mayorCoste)
+                {
+                    mayorCoste = coste;
+                    mejoraCara = def;
+                }
+            }
+        }
+
+        return mejoraCara;
+    }
+
+    void RefrescarTextoMeta()
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        var meta = BuscarMetaProxima();
+        if (meta == null) { Panel_MetaProxima?.SetActive(false); return; }
+
+        var estado = gc.Estado;
+        double ev = estado.EnergiaVital;
+        int nivel = estado.NivelMejora(meta.Id);
+        double coste = meta.CosteEnNivel(nivel);
+
+        if (Text_MetaNombre != null)
+            Text_MetaNombre.text = "Puedes mejorar: " + meta.Nombre + " Lv" + (nivel + 1);
+
+        if (Text_MetaProgreso != null)
+            Text_MetaProgreso.text = "Coste: " + Formateador.Numero(coste) + " EV";
+
+        if (Slider_MetaProgreso != null)
+            Slider_MetaProgreso.value = coste > 0 ? (float)System.Math.Min(ev / coste, 1.0) : 1f;
+    }
+
+    void CerrarMetaManual()
+    {
+        Panel_MetaProxima?.SetActive(false);
+        _timerSinComprar = 0f;
+        _timerReaparicion = TIEMPO_REAPARICION;
+    }
+
+    void OnMejoraCompradaResetMeta(EventoMejoraComprada _)
+    {
+        // Al comprar cualquier mejora resetear el timer y ocultar el panel
+        _timerSinComprar = 0f;
+        Panel_MetaProxima?.SetActive(false);
+    }
 
     void MostrarPantalla(GameObject pantalla)
     {
