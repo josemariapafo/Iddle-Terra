@@ -13,6 +13,10 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
+    // ── Referencias externas ─────────────────────────────────────────────
+    [Header("Referencias")]
+    public EraManager eraManager;
+
     // ── Pantallas ─────────────────────────────────────────────────────────
     [Header("Pantallas")]
     public GameObject Panel_Principal;
@@ -176,6 +180,12 @@ public class UIManager : MonoBehaviour
         Btn_RechazarEvento?.onClick.AddListener(OnClickRechazarEvento);
         Btn_ContinuarEra?.onClick.AddListener(() =>
         {
+            int era = GameController.Instance?.Estado.EraActual ?? 0;
+            Debug.Log($"[UIManager] ContinuarEra pulsado. Era={era} eraManager={eraManager != null}");
+            if (eraManager != null)
+                eraManager.AplicarEraVisual(era);
+            else
+                Debug.LogError("[UIManager] eraManager no asignado en el Inspector");
             Panel_EraDesbloqueada?.SetActive(false);
             MostrarPantalla(Panel_Principal);
         });
