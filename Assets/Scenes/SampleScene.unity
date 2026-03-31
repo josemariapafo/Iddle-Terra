@@ -4524,7 +4524,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   coliderPlaneta: {fileID: 334027379}
   camaraPrincipal: {fileID: 963194227}
-  canvasUI: {fileID: 788385536}
+  canvasUI: {fileID: 0}
   Prefab_NumeroFlotante: {fileID: 3301889513168705500, guid: 7a28b5966b4d7054b981791e6ff13946,
     type: 3}
   segundosPorTap: 0.5
@@ -11462,7 +11462,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 220}
+  m_AnchoredPosition: {x: 0, y: 200}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1927053640
