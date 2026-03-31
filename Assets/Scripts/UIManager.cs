@@ -307,76 +307,110 @@ public class UIManager : MonoBehaviour
 
         bool desbloqueada = gc.Estado.MejoraDesbloqueada(def.Id);
         int nivel = gc.Estado.NivelMejora(def.Id);
-        double coste = def.CosteEnNivel(nivel);
-        bool puedePagar = gc.Estado.EnergiaVital >= coste;
+        double ev = gc.Estado.EnergiaVital;
 
-        var textos = tarjeta.GetComponentsInChildren<TextMeshProUGUI>(true);
-        var botones = tarjeta.GetComponentsInChildren<Button>(true);
-        var sliders = tarjeta.GetComponentsInChildren<Slider>(true);
+        // ── Textos por nombre ────────────────────────────────────────────
+        var tNombre = tarjeta.transform.Find("Text_Nombre")?.GetComponent<TextMeshProUGUI>();
+        var tProd = tarjeta.transform.Find("Text_Produccion")?.GetComponent<TextMeshProUGUI>();
+        var tCoste = tarjeta.transform.Find("Text_Coste")?.GetComponent<TextMeshProUGUI>();
 
-        // Texto 0 — nombre y nivel
-        if (textos.Length > 0)
-            textos[0].text = desbloqueada
-                ? def.Nombre + "\nNv " + nivel + "/" + def.NivelMax
-                : def.Nombre + "\n[Era " + def.EraRequerida + "]";
+        if (tNombre != null)
+            tNombre.text = desbloqueada
+                ? def.Nombre + "  <size=70%>Nv " + nivel + "</size>"
+                : def.Nombre + "  <size=70%>[Era " + def.EraRequerida + "]</size>";
 
-        // Texto 1 — producción o descripción
-        if (textos.Length > 1)
-            textos[1].text = nivel > 0
+        if (tProd != null)
+            tProd.text = nivel > 0
                 ? "+" + Formateador.Numero(def.ProduccionEnNivel(nivel) * def.MultiplicadorHito(nivel)) + " EV/s"
                 : def.Descripcion;
 
-        // Texto 2 — coste del botón
-        if (textos.Length > 2)
-            textos[2].text = desbloqueada
-                ? Formateador.Numero(coste) + " EV"
+        if (tCoste != null)
+            tCoste.text = desbloqueada
+                ? Formateador.Numero(def.CosteEnNivel(nivel)) + " EV"
                 : "Bloqueada";
 
-        // Slider de progreso hacia próximo hito
-        if (sliders.Length > 0 && desbloqueada)
+        // ── Slider hito ───────────────────────────────────────────────────
+        var slider = tarjeta.transform.Find("Slider_Hito")?.GetComponent<Slider>();
+        if (slider != null && desbloqueada)
         {
             int[] hitos = { 10, 25, 50, 100, 200, 500 };
-            int anterior = 0, siguiente = def.NivelMax;
-            foreach (var h in hitos)
-            {
-                if (nivel < h) { siguiente = h; break; }
-                anterior = h;
-            }
-            sliders[0].value = siguiente > anterior
-                ? (float)(nivel - anterior) / (siguiente - anterior)
-                : 1f;
+            int ant = 0, sig = def.NivelMax;
+            foreach (var h in hitos) { if (nivel < h) { sig = h; break; } ant = h; }
+            slider.value = sig > ant ? (float)(nivel - ant) / (sig - ant) : 1f;
         }
 
-        // Botón Comprar ×1
-        if (botones.Length > 0)
+        // ── Botones por nombre ────────────────────────────────────────────
+        ConfigurarBtn(tarjeta, "Btn_Comprar", def, nivel, 1, ev, desbloqueada);
+        ConfigurarBtn(tarjeta, "Btn_Comprar10", def, nivel, 10, ev, desbloqueada);
+        ConfigurarBtn(tarjeta, "Btn_Comprar100", def, nivel, 100, ev, desbloqueada);
+        ConfigurarBtnMax(tarjeta, "Btn_ComprarMax", def, nivel, ev, desbloqueada);
+
+        tarjeta.SetActive(desbloqueada || def.EraRequerida <= gc.Estado.EraActual + 1);
+    }
+
+    void ConfigurarBtn(GameObject tarjeta, string nombre, DefinicionMejora def,
+                       int nivel, int cantidad, double ev, bool desbloqueada)
+    {
+        var t = tarjeta.transform.Find(nombre);
+        if (t == null) return;
+        var btn = t.GetComponent<Button>();
+        if (btn == null) return;
+
+        // Coste total de N niveles
+        double total = 0;
+        int nTemp = nivel;
+        int comprablesReales = 0;
+        for (int k = 0; k < cantidad && nTemp < def.NivelMax; k++, nTemp++)
         {
-            botones[0].interactable = desbloqueada && nivel < def.NivelMax && puedePagar;
-            botones[0].onClick.RemoveAllListeners();
-            var defCopia = def;
-            var tarjetaCopia = tarjeta;
-            botones[0].onClick.AddListener(() =>
-            {
-                if (GameController.Instance.ComprarMejora(defCopia.Id))
-                    RellenarTarjeta(tarjetaCopia, defCopia);
-            });
+            total += def.CosteEnNivel(nTemp);
+            comprablesReales++;
         }
 
-        // Botón Comprar Max
-        if (botones.Length > 1)
+        bool puede = desbloqueada && comprablesReales > 0 && ev >= total;
+        btn.interactable = puede;
+        btn.onClick.RemoveAllListeners();
+
+        var defC = def; var tarC = tarjeta; int cantC = cantidad;
+        btn.onClick.AddListener(() =>
         {
-            botones[1].interactable = desbloqueada && nivel < def.NivelMax && puedePagar;
-            botones[1].onClick.RemoveAllListeners();
-            var defCopia = def;
-            var tarjetaCopia = tarjeta;
-            botones[1].onClick.AddListener(() =>
-            {
-                if (GameController.Instance.ComprarMejoraMax(defCopia.Id) > 0)
-                    RellenarTarjeta(tarjetaCopia, defCopia);
-            });
-        }
+            if (cantC == 1) GameController.Instance?.ComprarMejora(defC.Id);
+            else GameController.Instance?.ComprarMejoraN(defC.Id, cantC);
+            RellenarTarjeta(tarC, defC);
+        });
 
-        // Ocultar tarjetas de eras futuras
-        tarjeta.SetActive(desbloqueada || def.EraRequerida <= (gc.Estado.EraActual + 1));
+        // Texto del boton
+        var txt = t.GetComponentInChildren<TextMeshProUGUI>();
+        if (txt != null)
+        {
+            string label = cantidad == 1 ? "x1" : "x" + cantidad;
+            txt.text = puede
+                ? label + "\n" + Formateador.Numero(total)
+                : label;
+        }
+    }
+
+    void ConfigurarBtnMax(GameObject tarjeta, string nombre, DefinicionMejora def,
+                          int nivel, double ev, bool desbloqueada)
+    {
+        var t = tarjeta.transform.Find(nombre);
+        if (t == null) return;
+        var btn = t.GetComponent<Button>();
+        if (btn == null) return;
+
+        double coste1 = def.CosteEnNivel(nivel);
+        bool puede = desbloqueada && nivel < def.NivelMax && ev >= coste1;
+        btn.interactable = puede;
+        btn.onClick.RemoveAllListeners();
+
+        var defC = def; var tarC = tarjeta;
+        btn.onClick.AddListener(() =>
+        {
+            GameController.Instance?.ComprarMejoraMax(defC.Id);
+            RellenarTarjeta(tarC, defC);
+        });
+
+        var txt = t.GetComponentInChildren<TextMeshProUGUI>();
+        if (txt != null) txt.text = "MAX";
     }
 
     void ActualizarTarjetas()
@@ -543,68 +577,9 @@ public class UIManager : MonoBehaviour
     // UTILIDADES
     // ══════════════════════════════════════════════════════════════════════
 
+
     // ══════════════════════════════════════════════════════════════════════
-    // HELPERS BOTONES COMPRA
-    // ══════════════════════════════════════════════════════════════════════
 
-    void ConfigurarBotonCompra(GameObject tarjeta, string nombreBtn, DefinicionMejora def, int nivel, int cantidad, bool puedePagarUno)
-    {
-        var t = tarjeta.transform.Find(nombreBtn);
-        if (t == null) return;
-        var btn = t.GetComponent<UnityEngine.UI.Button>();
-        if (btn == null) return;
-
-        var gc = GameController.Instance;
-
-        double costeTotal = 0;
-        int nivelTemp = nivel;
-        for (int k = 0; k < cantidad && nivelTemp < def.NivelMax; k++, nivelTemp++)
-            costeTotal += def.CosteEnNivel(nivelTemp);
-
-        bool puede = gc != null && gc.Estado.EnergiaVital >= costeTotal
-                     && nivel < def.NivelMax && gc.Estado.MejoraDesbloqueada(def.Id);
-
-        btn.interactable = puede;
-        btn.onClick.RemoveAllListeners();
-
-        string idCopia = def.Id;
-        int cantCopia = cantidad;
-        btn.onClick.AddListener(() =>
-        {
-            if (cantCopia == 1) GameController.Instance?.ComprarMejora(idCopia);
-            else GameController.Instance?.ComprarMejoraN(idCopia, cantCopia);
-            GenerarTarjetas(_categoriaActual);
-        });
-
-        var txt = t.GetComponentInChildren<TextMeshProUGUI>();
-        if (txt != null)
-        {
-            string label = cantidad == 1 ? "x1" : "x" + cantidad;
-            txt.text = label + "" + Formateador.Numero(costeTotal);
-        }
-    }
-
-    void ConfigurarBotonCompraMax(GameObject tarjeta, string nombreBtn, DefinicionMejora def, int nivel, bool puedePagarUno)
-    {
-        var t = tarjeta.transform.Find(nombreBtn);
-        if (t == null) return;
-        var btn = t.GetComponent<UnityEngine.UI.Button>();
-        if (btn == null) return;
-
-        bool puede = puedePagarUno && nivel < def.NivelMax;
-        btn.interactable = puede;
-        btn.onClick.RemoveAllListeners();
-
-        string idCopia = def.Id;
-        btn.onClick.AddListener(() =>
-        {
-            GameController.Instance?.ComprarMejoraMax(idCopia);
-            GenerarTarjetas(_categoriaActual);
-        });
-
-        var txt = t.GetComponentInChildren<TextMeshProUGUI>();
-        if (txt != null) txt.text = "MAX";
-    }
 
     // ══════════════════════════════════════════════════════════════════════
     // META PROXIMA VISIBLE
