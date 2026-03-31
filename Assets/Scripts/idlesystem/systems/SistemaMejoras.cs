@@ -50,7 +50,7 @@ namespace Terra.Systems
             var est = _estado.Mejoras[idMejora];
             double coste = def.CosteEnNivel(est.Nivel);
 
-            if (!est.Desbloqueada || est.Nivel >= def.NivelMax)  return false;
+            if (!est.Desbloqueada || est.Nivel >= def.NivelMax) return false;
             if (_estado.EnergiaVital < coste) return false;
 
             _estado.EnergiaVital -= coste;
@@ -60,6 +60,35 @@ namespace Terra.Systems
             PublicarCompra(idMejora, est.Nivel, def);
             ComprobarDesbloqueos();
             return true;
+        }
+
+        public int ComprarN(string idMejora, int cantidad)
+        {
+            var def = BuscarDefinicion(idMejora);
+            if (def == null) return 0;
+
+            var est = _estado.Mejoras[idMejora];
+            if (!est.Desbloqueada) return 0;
+
+            int comprados = 0;
+            while (comprados < cantidad && est.Nivel < def.NivelMax)
+            {
+                double coste = def.CosteEnNivel(est.Nivel);
+                if (_estado.EnergiaVital < coste) break;
+
+                _estado.EnergiaVital -= coste;
+                est.Nivel++;
+                comprados++;
+                _estado.MejorasCompradasEnSesion++;
+            }
+
+            if (comprados > 0)
+            {
+                PublicarCompra(idMejora, est.Nivel, def);
+                ComprobarDesbloqueos();
+            }
+
+            return comprados;
         }
 
         public int ComprarMax(string idMejora)
@@ -147,6 +176,13 @@ namespace Terra.Systems
 
         public DefinicionMejora[] ObtenerPorPilarYZona(TipoPilar pilar, int zona) =>
             _definiciones.Where(d => d.Pilar == pilar && d.Zona == zona).ToArray();
+
+        public DefinicionMejora ObtenerPorId(string id)
+        {
+            foreach (var def in _definiciones)
+                if (def.Id == id) return def;
+            return null;
+        }
 
         public DefinicionMejora[] ObtenerPorPilar(TipoPilar pilar) =>
             _definiciones.Where(d => d.Pilar == pilar).ToArray();

@@ -544,6 +544,69 @@ public class UIManager : MonoBehaviour
     // ══════════════════════════════════════════════════════════════════════
 
     // ══════════════════════════════════════════════════════════════════════
+    // HELPERS BOTONES COMPRA
+    // ══════════════════════════════════════════════════════════════════════
+
+    void ConfigurarBotonCompra(GameObject tarjeta, string nombreBtn, DefinicionMejora def, int nivel, int cantidad, bool puedePagarUno)
+    {
+        var t = tarjeta.transform.Find(nombreBtn);
+        if (t == null) return;
+        var btn = t.GetComponent<UnityEngine.UI.Button>();
+        if (btn == null) return;
+
+        var gc = GameController.Instance;
+
+        double costeTotal = 0;
+        int nivelTemp = nivel;
+        for (int k = 0; k < cantidad && nivelTemp < def.NivelMax; k++, nivelTemp++)
+            costeTotal += def.CosteEnNivel(nivelTemp);
+
+        bool puede = gc != null && gc.Estado.EnergiaVital >= costeTotal
+                     && nivel < def.NivelMax && gc.Estado.MejoraDesbloqueada(def.Id);
+
+        btn.interactable = puede;
+        btn.onClick.RemoveAllListeners();
+
+        string idCopia = def.Id;
+        int cantCopia = cantidad;
+        btn.onClick.AddListener(() =>
+        {
+            if (cantCopia == 1) GameController.Instance?.ComprarMejora(idCopia);
+            else GameController.Instance?.ComprarMejoraN(idCopia, cantCopia);
+            GenerarTarjetas(_categoriaActual);
+        });
+
+        var txt = t.GetComponentInChildren<TextMeshProUGUI>();
+        if (txt != null)
+        {
+            string label = cantidad == 1 ? "x1" : "x" + cantidad;
+            txt.text = label + "" + Formateador.Numero(costeTotal);
+        }
+    }
+
+    void ConfigurarBotonCompraMax(GameObject tarjeta, string nombreBtn, DefinicionMejora def, int nivel, bool puedePagarUno)
+    {
+        var t = tarjeta.transform.Find(nombreBtn);
+        if (t == null) return;
+        var btn = t.GetComponent<UnityEngine.UI.Button>();
+        if (btn == null) return;
+
+        bool puede = puedePagarUno && nivel < def.NivelMax;
+        btn.interactable = puede;
+        btn.onClick.RemoveAllListeners();
+
+        string idCopia = def.Id;
+        btn.onClick.AddListener(() =>
+        {
+            GameController.Instance?.ComprarMejoraMax(idCopia);
+            GenerarTarjetas(_categoriaActual);
+        });
+
+        var txt = t.GetComponentInChildren<TextMeshProUGUI>();
+        if (txt != null) txt.text = "MAX";
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // META PROXIMA VISIBLE
     // ══════════════════════════════════════════════════════════════════════
 
@@ -641,8 +704,13 @@ public class UIManager : MonoBehaviour
 
     void OnMejoraCompradaResetMeta(EventoMejoraComprada _)
     {
-        // Al comprar cualquier mejora resetear el timer y ocultar el panel
+        NotificarActividad();
+    }
+
+    public void NotificarActividad()
+    {
         _timerSinComprar = 0f;
+        _timerReaparicion = 0f;
         Panel_MetaProxima?.SetActive(false);
     }
 

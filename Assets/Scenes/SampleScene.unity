@@ -418,7 +418,7 @@ GameObject:
   - component: {fileID: 99400961}
   - component: {fileID: 99400960}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: Text_btn_cerrar_meta
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -472,7 +472,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4281479730
   m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -485,7 +485,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -4255,7 +4255,7 @@ MonoBehaviour:
   planetaRenderer: {fileID: 334027380}
   atmosferaRenderer: {fileID: 1250975275}
   transicion: {fileID: 745651880}
-  _eraActual: 7
+  _eraActual: 0
 --- !u!224 &745651879
 RectTransform:
   m_ObjectHideFlags: 0

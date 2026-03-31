@@ -18,16 +18,16 @@ namespace Terra.Controllers
         public static GameController Instance { get; private set; }
 
         // ── Sistemas públicos (la UI los consulta) ────────────────────────
-        public EstadoJuego Estado           { get; private set; }
-        public SistemaMejoras Mejoras       { get; private set; }
-        public SistemaSinergias Sinergias   { get; private set; }
-        public SistemaPrestige Prestige     { get; private set; }
-        public SistemaEras Eras             { get; private set; }
-        public SistemaArbol Arbol           { get; private set; }
-        public SistemaEventos Eventos       { get; private set; }
-        public SistemaLogros Logros         { get; private set; }
+        public EstadoJuego Estado { get; private set; }
+        public SistemaMejoras Mejoras { get; private set; }
+        public SistemaSinergias Sinergias { get; private set; }
+        public SistemaPrestige Prestige { get; private set; }
+        public SistemaEras Eras { get; private set; }
+        public SistemaArbol Arbol { get; private set; }
+        public SistemaEventos Eventos { get; private set; }
+        public SistemaLogros Logros { get; private set; }
         public SistemaEstancamiento Estancamiento { get; private set; }
-        public SistemaRacha Racha           { get; private set; }
+        public SistemaRacha Racha { get; private set; }
 
         // ── Sistemas privados ─────────────────────────────────────────────
         private CalculadorProduccion _calculador;
@@ -99,12 +99,12 @@ namespace Terra.Controllers
         private void Inicializar()
         {
             // 1. Crear catálogos (datos inmutables)
-            var defMejoras   = CatalogoMejoras.Crear();
+            var defMejoras = CatalogoMejoras.Crear();
             var defSinergias = CatalogoSinergias.Crear();
-            var defEras      = CatalogoEras.Crear();
-            var defNodos     = CatalogoNodos.Crear();
-            var defEventos   = CatalogoEventos.Crear();
-            var defLogros    = CatalogoLogros.Crear();
+            var defEras = CatalogoEras.Crear();
+            var defNodos = CatalogoNodos.Crear();
+            var defEventos = CatalogoEventos.Crear();
+            var defLogros = CatalogoLogros.Crear();
 
             // 2. Crear estado
             Estado = new EstadoJuego();
@@ -113,17 +113,17 @@ namespace Terra.Controllers
             _calculador = new CalculadorProduccion(defMejoras, defSinergias, defNodos);
 
             // 4. Crear sistemas
-            Mejoras       = new SistemaMejoras(defMejoras);
-            Sinergias     = new SistemaSinergias(defSinergias, Mejoras);
-            Prestige      = new SistemaPrestige(_calculador);
-            Eras          = new SistemaEras(defEras, Mejoras, Sinergias);
-            Arbol         = new SistemaArbol(defNodos);
-            Eventos       = new SistemaEventos(defEventos);
-            Logros        = new SistemaLogros(defLogros);
+            Mejoras = new SistemaMejoras(defMejoras);
+            Sinergias = new SistemaSinergias(defSinergias, Mejoras);
+            Prestige = new SistemaPrestige(_calculador);
+            Eras = new SistemaEras(defEras, Mejoras, Sinergias);
+            Arbol = new SistemaArbol(defNodos);
+            Eventos = new SistemaEventos(defEventos);
+            Logros = new SistemaLogros(defLogros);
             Estancamiento = new SistemaEstancamiento(Prestige);
-            Racha         = new SistemaRacha();
-            _offline      = new SistemaOffline(_calculador);
-            _guardado     = new SistemaGuardado();
+            Racha = new SistemaRacha();
+            _offline = new SistemaOffline(_calculador);
+            _guardado = new SistemaGuardado();
 
             // 5. Inyectar estado en sistemas
             Mejoras.AsignarEstado(Estado);
@@ -192,22 +192,23 @@ namespace Terra.Controllers
         // API PÚBLICA (llamada desde la UI)
         // ══════════════════════════════════════════════════════════════════
 
-        public bool ComprarMejora(string id)         => Mejoras.ComprarUno(id);
-        public int  ComprarMejoraMax(string id)      => Mejoras.ComprarMax(id);
-        public bool ComprarNodoArbol(string id)      => Arbol.ComprarNivel(id);
+        public bool ComprarMejora(string id) => Mejoras.ComprarUno(id);
+        public int ComprarMejoraMax(string id) => Mejoras.ComprarMax(id);
+        public int ComprarMejoraN(string id, int n) => Mejoras.ComprarN(id, n);
+        public bool ComprarNodoArbol(string id) => Arbol.ComprarNivel(id);
         public void HacerPrestige(TipoPrestige tipo) => Prestige.Realizar(tipo);
-        public void AvanzarEra()                     => Eras.AvanzarEra();
-        public bool PuedeAvanzarEra()                => Eras.PuedeAvanzar();
-        public double ProgresoEra()                  => Eras.ProgresoHaciaEra();
-        public void AceptarEvento(string id)         => Eventos.AceptarEvento(id);
-        public void RechazarEvento()                 => Eventos.RechazarEvento();
-        public bool ReclamarBonusDiario()            => Racha.ReclamarBonusDiario();
+        public void AvanzarEra() => Eras.AvanzarEra();
+        public bool PuedeAvanzarEra() => Eras.PuedeAvanzar();
+        public double ProgresoEra() => Eras.ProgresoHaciaEra();
+        public void AceptarEvento(string id) => Eventos.AceptarEvento(id);
+        public void RechazarEvento() => Eventos.RechazarEvento();
+        public bool ReclamarBonusDiario() => Racha.ReclamarBonusDiario();
 
         /// <summary>Aplica un multiplicador temporal de EV — usado por MeteoroManager.</summary>
         public void AplicarEventoTemporal(float multiplicador, float duracionSegundos)
         {
-            Estado.MultiplicadorEvento    = multiplicador;
-            Estado.TiempoRestanteEvento   = duracionSegundos;
+            Estado.MultiplicadorEvento = multiplicador;
+            Estado.TiempoRestanteEvento = duracionSegundos;
         }
 
         // ══════════════════════════════════════════════════════════════════

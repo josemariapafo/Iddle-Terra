@@ -112,6 +112,7 @@ public class TapManager : MonoBehaviour
         {
             double evMeteoro = GameController.Instance?.Estado.EVPorSegundo * 2.0 ?? 0;
             MostrarNumero(posicionPantalla, evMeteoro, colorMeteoro);
+            UIManager.Instance?.NotificarActividad();
             return;
         }
 
@@ -126,6 +127,8 @@ public class TapManager : MonoBehaviour
     {
         var gc = GameController.Instance;
         if (gc == null) return;
+
+        UIManager.Instance?.NotificarActividad();
 
         double mult = _comboActivo ? multiplicadorCombo : 1.0;
         double evExtra = gc.Estado.EVPorSegundo * segundosPorTap * mult;
