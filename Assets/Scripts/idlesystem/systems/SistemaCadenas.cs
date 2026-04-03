@@ -139,7 +139,8 @@ namespace Terra.Systems
 
         /// <summary>
         /// Cap efectivo del pilar = min(generación, procesamiento, distribución).
-        /// Retorna double.MaxValue si la cadena no está desbloqueada (sin límite).
+        /// Retorna double.MaxValue si la cadena no está desbloqueada o si el jugador
+        /// no ha comprado ningún nivel (cap = 0 significaría bloqueo total).
         /// </summary>
         public double CalcularCapPilar(TipoPilar pilar)
         {
@@ -149,7 +150,10 @@ namespace Terra.Systems
             double proc = CalcularCapEslabon(pilar, TipoEslabon.Procesamiento);
             double dist = CalcularCapEslabon(pilar, TipoEslabon.Distribucion);
 
-            return System.Math.Min(gen, System.Math.Min(proc, dist));
+            double cap = System.Math.Min(gen, System.Math.Min(proc, dist));
+
+            // Si no se ha comprado nada aún, no limitar (evita cap = 0)
+            return cap <= 0 ? double.MaxValue : cap;
         }
 
         /// <summary>

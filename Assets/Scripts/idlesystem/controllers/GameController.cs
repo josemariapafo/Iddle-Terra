@@ -28,6 +28,7 @@ namespace Terra.Controllers
         public SistemaLogros Logros { get; private set; }
         public SistemaEstancamiento Estancamiento { get; private set; }
         public SistemaRacha Racha { get; private set; }
+        public SistemaCadenas Cadenas { get; private set; }
 
         // ── Sistemas privados ─────────────────────────────────────────────
         private CalculadorProduccion _calculador;
@@ -105,6 +106,7 @@ namespace Terra.Controllers
             var defNodos = CatalogoNodos.Crear();
             var defEventos = CatalogoEventos.Crear();
             var defLogros = CatalogoLogros.Crear();
+            var defCadenas = CatalogoCadenas.Crear();
 
             // 2. Crear estado
             Estado = new EstadoJuego();
@@ -113,6 +115,8 @@ namespace Terra.Controllers
             _calculador = new CalculadorProduccion(defMejoras, defSinergias, defNodos);
 
             // 4. Crear sistemas
+            Cadenas = new SistemaCadenas(defCadenas);
+            _calculador.AsignarCadenas(Cadenas);
             Mejoras = new SistemaMejoras(defMejoras);
             Sinergias = new SistemaSinergias(defSinergias, Mejoras);
             Prestige = new SistemaPrestige(_calculador);
@@ -126,6 +130,7 @@ namespace Terra.Controllers
             _guardado = new SistemaGuardado();
 
             // 5. Inyectar estado en sistemas
+            Cadenas.AsignarEstado(Estado);
             Mejoras.AsignarEstado(Estado);
             Sinergias.AsignarEstado(Estado);
             Prestige.AsignarEstado(Estado);
@@ -146,6 +151,7 @@ namespace Terra.Controllers
             Mejoras.ComprobarDesbloqueos();
             Sinergias.Comprobar();
             Arbol.ComprobarDesbloqueos();
+            Cadenas.ComprobarDesbloqueos();
 
             // Comprobar racha diaria
             Racha.ComprobarConexionDiaria();
@@ -203,6 +209,8 @@ namespace Terra.Controllers
         public void AceptarEvento(string id) => Eventos.AceptarEvento(id);
         public void RechazarEvento() => Eventos.RechazarEvento();
         public bool ReclamarBonusDiario() => Racha.ReclamarBonusDiario();
+        public bool ComprarSubMejoraCadena(string id) => Cadenas.ComprarNivel(id);
+        public int ComprarSubMejoraCadenaMax(string id) => Cadenas.ComprarMax(id);
 
         /// <summary>Aplica un multiplicador temporal de EV — usado por MeteoroManager.</summary>
         public void AplicarEventoTemporal(float multiplicador, float duracionSegundos)

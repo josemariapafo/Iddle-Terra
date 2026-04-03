@@ -16,6 +16,7 @@ namespace Terra.Systems
         private readonly DefinicionMejora[] _todasMejoras;
         private readonly DefinicionSinergia[] _todasSinergias;
         private readonly DefinicionNodo[] _todosNodos;
+        private SistemaCadenas _cadenas;
 
         public CalculadorProduccion(
             DefinicionMejora[] mejoras,
@@ -26,6 +27,8 @@ namespace Terra.Systems
             _todasSinergias = sinergias;
             _todosNodos     = nodos;
         }
+
+        public void AsignarCadenas(SistemaCadenas cadenas) => _cadenas = cadenas;
 
         /// <summary>
         /// Calcula EV/s completo con todas las capas multiplicadoras.
@@ -48,23 +51,41 @@ namespace Terra.Systems
         }
 
         /// <summary>
-        /// Producción base = suma de todas las mejoras con sus hitos y multiplicadores de pilar.
+        /// Producción base = suma por pilar, cada pilar limitado por su cadena.
         /// </summary>
         public double CalcularBaseProduccion(EstadoJuego estado)
         {
+            double[] porPilar = CalcularProduccionBrutaPorPilar(estado);
             double total = 0;
 
+            for (int p = 0; p < 4; p++)
+            {
+                double produccion = porPilar[p];
+                if (_cadenas != null)
+                {
+                    double cap = _cadenas.CalcularCapPilar((TipoPilar)p);
+                    if (cap < produccion) produccion = cap;
+                }
+                total += produccion;
+            }
+
+            return total;
+        }
+
+        /// <summary>
+        /// Producción bruta por pilar SIN aplicar cap de cadena.
+        /// </summary>
+        private double[] CalcularProduccionBrutaPorPilar(EstadoJuego estado)
+        {
+            double[] resultado = new double[4];
             foreach (var def in _todasMejoras)
             {
                 if (!estado.MejoraDesbloqueada(def.Id)) continue;
                 int nivel = estado.NivelMejora(def.Id);
                 if (nivel <= 0) continue;
-
-                double prod = def.ProduccionEnNivel(nivel) * def.MultiplicadorHito(nivel);
-                total += prod;
+                resultado[(int)def.Pilar] += def.ProduccionEnNivel(nivel) * def.MultiplicadorHito(nivel);
             }
-
-            return total;
+            return resultado;
         }
 
         /// <summary>
@@ -108,23 +129,44 @@ namespace Terra.Systems
         }
 
         /// <summary>
-        /// Desglose de producción por pilar. Útil para la UI.
+        /// Desglose por pilar: producción bruta, cap de cadena y producción efectiva.
         /// </summary>
-        public double[] CalcularProduccionPorPilar(EstadoJuego estado)
+        public struct DesglosePilar
         {
-            double[] resultado = new double[4];
+            public double Potencial;
+            public double CapCadena;
+            public double Efectivo;
+        }
 
-            foreach (var def in _todasMejoras)
+        public DesglosePilar[] CalcularDesglosePorPilar(EstadoJuego estado)
+        {
+            double[] bruta = CalcularProduccionBrutaPorPilar(estado);
+            var resultado = new DesglosePilar[4];
+
+            for (int p = 0; p < 4; p++)
             {
-                if (!estado.MejoraDesbloqueada(def.Id)) continue;
-                int nivel = estado.NivelMejora(def.Id);
-                if (nivel <= 0) continue;
+                double cap = _cadenas != null
+                    ? _cadenas.CalcularCapPilar((TipoPilar)p)
+                    : double.MaxValue;
 
-                resultado[(int)def.Pilar] +=
-                    def.ProduccionEnNivel(nivel) * def.MultiplicadorHito(nivel);
+                resultado[p] = new DesglosePilar
+                {
+                    Potencial = bruta[p],
+                    CapCadena = cap,
+                    Efectivo  = Math.Min(bruta[p], cap)
+                };
             }
 
             return resultado;
+        }
+
+        /// <summary>
+        /// Producción efectiva por pilar (con cap aplicado). Retrocompatible.
+        /// </summary>
+        public double[] CalcularProduccionPorPilar(EstadoJuego estado)
+        {
+            var desglose = CalcularDesglosePorPilar(estado);
+            return new[] { desglose[0].Efectivo, desglose[1].Efectivo, desglose[2].Efectivo, desglose[3].Efectivo };
         }
 
         /// <summary>
