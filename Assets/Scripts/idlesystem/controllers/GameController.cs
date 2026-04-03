@@ -29,6 +29,7 @@ namespace Terra.Controllers
         public SistemaEstancamiento Estancamiento { get; private set; }
         public SistemaRacha Racha { get; private set; }
         public SistemaCadenas Cadenas { get; private set; }
+        public SistemaMisiones Misiones { get; private set; }
 
         // ── Sistemas privados ─────────────────────────────────────────────
         private CalculadorProduccion _calculador;
@@ -107,6 +108,7 @@ namespace Terra.Controllers
             var defEventos = CatalogoEventos.Crear();
             var defLogros = CatalogoLogros.Crear();
             var defCadenas = CatalogoCadenas.Crear();
+            var defMisiones = CatalogoMisiones.Crear();
 
             // 2. Crear estado
             Estado = new EstadoJuego();
@@ -126,6 +128,7 @@ namespace Terra.Controllers
             Logros = new SistemaLogros(defLogros);
             Estancamiento = new SistemaEstancamiento(Prestige);
             Racha = new SistemaRacha();
+            Misiones = new SistemaMisiones(defMisiones, _calculador);
             _offline = new SistemaOffline(_calculador);
             _guardado = new SistemaGuardado();
 
@@ -140,6 +143,7 @@ namespace Terra.Controllers
             Logros.AsignarEstado(Estado);
             Estancamiento.AsignarEstado(Estado);
             Racha.AsignarEstado(Estado);
+            Misiones.AsignarEstado(Estado);
             _offline.AsignarEstado(Estado);
         }
 
@@ -189,6 +193,7 @@ namespace Terra.Controllers
             Eventos.Actualizar(delta);
             Logros.Actualizar(delta);
             Estancamiento.Actualizar(delta);
+            Misiones.Actualizar(delta);
 
             // Publicar cambio de EV
             EventBus.Publicar(new EventoEVCambia(Estado.EnergiaVital));
