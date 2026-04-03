@@ -221,6 +221,13 @@ namespace Terra.Systems
                 est.Activa = false;
             }
 
+            // Resetear cadenas
+            foreach (var est in _estado.Cadenas.Values)
+            {
+                est.Nivel = 0;
+                est.Desbloqueada = false;
+            }
+
             if (tipo == TipoReset.Total)
             {
                 // BigBang: también resetear árbol y recursos

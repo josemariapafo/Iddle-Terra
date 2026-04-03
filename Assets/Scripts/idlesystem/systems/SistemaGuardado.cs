@@ -34,6 +34,8 @@ namespace Terra.Systems
             public string nodos;
             // Logros completados: ids separados por |
             public string logros;
+            // Cadenas: id:nivel separados por |
+            public string cadenas;
         }
 
         public void Guardar(EstadoJuego estado)
@@ -73,6 +75,13 @@ namespace Terra.Systems
                 if (kv.Value.Completado)
                     partesLogros.Append($"{kv.Key}|");
             datos.logros = partesLogros.ToString();
+
+            // Serializar cadenas
+            var partesCadenas = new System.Text.StringBuilder();
+            foreach (var kv in estado.Cadenas)
+                if (kv.Value.Nivel > 0)
+                    partesCadenas.Append($"{kv.Key}:{kv.Value.Nivel}|");
+            datos.cadenas = partesCadenas.ToString();
 
             string json = JsonUtility.ToJson(datos);
             PlayerPrefs.SetString(KEY_GUARDADO, json);
@@ -136,6 +145,18 @@ namespace Terra.Systems
                             estado.Logros[id].Completado = true;
                             estado.Logros[id].FechaCompletado = DateTime.UtcNow;
                         }
+                    }
+
+                // Cargar cadenas
+                if (!string.IsNullOrEmpty(datos.cadenas))
+                    foreach (var parte in datos.cadenas.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(parte)) continue;
+                        var kv = parte.Split(':');
+                        if (kv.Length != 2) continue;
+                        string id = kv[0];
+                        if (int.TryParse(kv[1], out int nivel) && estado.Cadenas.ContainsKey(id))
+                            estado.Cadenas[id].Nivel = nivel;
                     }
 
                 return true;
