@@ -122,8 +122,14 @@ namespace Terra.Systems
 
         // ── Cálculos de cap ───────────────────────────────────────────────
 
+        // Niveles equivalentes de "colchón" gratis por eslabón.
+        // Evita un muro inmediato al desbloquear la cadena, pero el
+        // jugador pronto superará este cap y tendrá que mejorar.
+        private const int NIVELES_BASE_GRATIS = 2;
+
         /// <summary>
-        /// Cap de un eslabón = suma de (capPorNivel × nivel) de sus sub-mejoras.
+        /// Cap de un eslabón = base gratuita + suma de (capPorNivel × nivel).
+        /// La base viene de la primera sub-mejora (tier 0) × NIVELES_BASE_GRATIS.
         /// </summary>
         public double CalcularCapEslabon(TipoPilar pilar, TipoEslabon eslabon)
         {
@@ -131,6 +137,11 @@ namespace Terra.Systems
             foreach (var def in _definiciones)
             {
                 if (def.Pilar != pilar || def.Eslabon != eslabon) continue;
+
+                // Base gratis: solo la sub-mejora de tier 0 (sin requisito de eslabón)
+                if (def.NivelEslabonRequerido == 0)
+                    cap += def.CapPorNivel * NIVELES_BASE_GRATIS;
+
                 var est = _estado.Cadenas[def.Id];
                 cap += def.CapPorNivel * est.Nivel;
             }
@@ -139,8 +150,7 @@ namespace Terra.Systems
 
         /// <summary>
         /// Cap efectivo del pilar = min(generación, procesamiento, distribución).
-        /// Retorna double.MaxValue si la cadena no está desbloqueada o si el jugador
-        /// no ha comprado ningún nivel (cap = 0 significaría bloqueo total).
+        /// Retorna double.MaxValue si la cadena no está desbloqueada aún.
         /// </summary>
         public double CalcularCapPilar(TipoPilar pilar)
         {
@@ -150,10 +160,7 @@ namespace Terra.Systems
             double proc = CalcularCapEslabon(pilar, TipoEslabon.Procesamiento);
             double dist = CalcularCapEslabon(pilar, TipoEslabon.Distribucion);
 
-            double cap = System.Math.Min(gen, System.Math.Min(proc, dist));
-
-            // Si no se ha comprado nada aún, no limitar (evita cap = 0)
-            return cap <= 0 ? double.MaxValue : cap;
+            return System.Math.Min(gen, System.Math.Min(proc, dist));
         }
 
         /// <summary>

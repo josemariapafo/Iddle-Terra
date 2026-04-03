@@ -5,6 +5,7 @@ using TMPro;
 using Terra.Controllers;
 using Terra.Core;
 using Terra.Data;
+using Terra.Systems;
 
 /// <summary>
 /// UIManager v2 — conecta toda la UI con el sistema idle.
@@ -54,6 +55,12 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI Text_TituloZona2;
     public Button Btn_CerrarCategoria;
     public GameObject Prefab_TarjetaMejora;
+
+    // ── Cadenas (pestañas en Panel Categoria) ─────────────────────────────
+    [Header("Cadenas")]
+    public Button Btn_TabProduccion;
+    public Button Btn_TabInfraestructura;
+    public TextMeshProUGUI Text_ResumenCadenas;
 
     // ── Panel Prestige ────────────────────────────────────────────────────
     [Header("Panel Prestige")]
@@ -108,10 +115,13 @@ public class UIManager : MonoBehaviour
 
     // ── Internas ──────────────────────────────────────────────────────────
     private TipoPilar _categoriaActual = TipoPilar.Atmosfera;
+    private bool _tabInfraestructura = false;
     private float _timerUI = 0f;
     private const float INTERVALO_UI = 0.2f;
     private readonly List<(GameObject tarjeta, DefinicionMejora def)> _tarjetasActivas
         = new List<(GameObject, DefinicionMejora)>();
+    private readonly List<(GameObject tarjeta, DefinicionSubMejoraCadena def)> _tarjetasCadenaActivas
+        = new List<(GameObject, DefinicionSubMejoraCadena)>();
 
     static readonly string[][] _zonasNombres =
     {
@@ -122,6 +132,7 @@ public class UIManager : MonoBehaviour
     };
 
     static readonly string[] _nombresPilar = { "ATMOSFERA", "OCEANOS", "TIERRA", "VIDA" };
+    static readonly string[] _eslabonNombres = { "Generación", "Procesamiento", "Distribución" };
 
     // ══════════════════════════════════════════════════════════════════════
     void Awake()
@@ -145,7 +156,10 @@ public class UIManager : MonoBehaviour
         _timerUI = INTERVALO_UI;
         ActualizarHUD();
         if (Panel_Categoria != null && Panel_Categoria.activeSelf)
-            ActualizarTarjetas();
+        {
+            if (_tabInfraestructura) ActualizarTarjetasCadena();
+            else ActualizarTarjetas();
+        }
         if (Panel_Prestige != null && Panel_Prestige.activeSelf)
             ActualizarPrestige();
     }
@@ -168,6 +182,8 @@ public class UIManager : MonoBehaviour
 
         Btn_Evolucionar?.onClick.AddListener(OnClickEvolucionar);
         Btn_CerrarCategoria?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+        Btn_TabProduccion?.onClick.AddListener(() => CambiarTab(false));
+        Btn_TabInfraestructura?.onClick.AddListener(() => CambiarTab(true));
         Btn_CerrarMeta?.onClick.AddListener(CerrarMetaManual);
         Btn_AbrirPrestige?.onClick.AddListener(() => MostrarPantalla(Panel_Prestige));
         Btn_CerrarPrestige?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
@@ -249,6 +265,7 @@ public class UIManager : MonoBehaviour
         if (Indicador_Estancamiento != null)
             Indicador_Estancamiento.SetActive(gc.Estancamiento.EstaEstancado());
 
+        ActualizarResumenCadenas();
         ActualizarMetaProxima();
     }
 
@@ -259,20 +276,51 @@ public class UIManager : MonoBehaviour
     void AbrirCategoria(TipoPilar pilar)
     {
         _categoriaActual = pilar;
+        _tabInfraestructura = false;
 
         if (Text_NombreCategoria != null)
             Text_NombreCategoria.text = _nombresPilar[(int)pilar];
-        if (Text_TituloZona0 != null) Text_TituloZona0.text = _zonasNombres[(int)pilar][0];
-        if (Text_TituloZona1 != null) Text_TituloZona1.text = _zonasNombres[(int)pilar][1];
-        if (Text_TituloZona2 != null) Text_TituloZona2.text = _zonasNombres[(int)pilar][2];
 
-        GenerarTarjetas(pilar);
+        // Mostrar/ocultar pestaña infraestructura según si la cadena está desbloqueada
+        var gc = GameController.Instance;
+        bool cadenaActiva = gc != null && gc.Cadenas.CadenaPilarDesbloqueada(pilar);
+        if (Btn_TabInfraestructura != null)
+            Btn_TabInfraestructura.gameObject.SetActive(cadenaActiva);
+        if (Btn_TabProduccion != null)
+            Btn_TabProduccion.gameObject.SetActive(cadenaActiva);
+
+        AplicarTab();
         MostrarPantalla(Panel_Categoria);
+    }
+
+    void CambiarTab(bool infraestructura)
+    {
+        _tabInfraestructura = infraestructura;
+        AplicarTab();
+    }
+
+    void AplicarTab()
+    {
+        // Resaltar pestaña activa
+        if (Btn_TabProduccion != null)
+            Btn_TabProduccion.interactable = _tabInfraestructura;
+        if (Btn_TabInfraestructura != null)
+            Btn_TabInfraestructura.interactable = !_tabInfraestructura;
+
+        if (_tabInfraestructura)
+            GenerarTarjetasCadena(_categoriaActual);
+        else
+            GenerarTarjetas(_categoriaActual);
     }
 
     void GenerarTarjetas(TipoPilar pilar)
     {
         _tarjetasActivas.Clear();
+
+        // Restaurar títulos de zona (pueden haber sido cambiados por la pestaña cadenas)
+        if (Text_TituloZona0 != null) Text_TituloZona0.text = _zonasNombres[(int)pilar][0];
+        if (Text_TituloZona1 != null) Text_TituloZona1.text = _zonasNombres[(int)pilar][1];
+        if (Text_TituloZona2 != null) Text_TituloZona2.text = _zonasNombres[(int)pilar][2];
 
         // Limpiar contenedores
         Transform[] contenedores = { Contenedor_Zona0, Contenedor_Zona1, Contenedor_Zona2 };
@@ -306,8 +354,17 @@ public class UIManager : MonoBehaviour
             }
         }
 
+        // Mostrar si hay cuello de botella
         if (Text_ProduccionCategoria != null)
-            Text_ProduccionCategoria.text = Formateador.Numero(prodTotal) + " EV/s";
+        {
+            double cap = gc.Cadenas.CalcularCapPilar(pilar);
+            bool limitado = cap < prodTotal && cap < double.MaxValue;
+            if (limitado)
+                Text_ProduccionCategoria.text = Formateador.Numero(cap) + " / "
+                    + Formateador.Numero(prodTotal) + " EV/s  <color=#FF6644>[CUELLO DE BOTELLA — mejora Infraestructura]</color>";
+            else
+                Text_ProduccionCategoria.text = Formateador.Numero(prodTotal) + " EV/s";
+        }
     }
 
     void RellenarTarjeta(GameObject tarjeta, DefinicionMejora def)
@@ -438,7 +495,253 @@ public class UIManager : MonoBehaviour
         }
 
         if (Text_ProduccionCategoria != null)
-            Text_ProduccionCategoria.text = Formateador.Numero(prodTotal) + " EV/s";
+        {
+            double cap = gc.Cadenas.CalcularCapPilar(_categoriaActual);
+            bool limitado = cap < prodTotal && cap < double.MaxValue;
+            if (limitado)
+                Text_ProduccionCategoria.text = Formateador.Numero(cap) + " / "
+                    + Formateador.Numero(prodTotal) + " EV/s  <color=#FF6644>[CUELLO DE BOTELLA]</color>";
+            else
+                Text_ProduccionCategoria.text = Formateador.Numero(prodTotal) + " EV/s";
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // CADENAS (INFRAESTRUCTURA)
+    // ══════════════════════════════════════════════════════════════════════
+
+    void GenerarTarjetasCadena(TipoPilar pilar)
+    {
+        _tarjetasCadenaActivas.Clear();
+
+        Transform[] contenedores = { Contenedor_Zona0, Contenedor_Zona1, Contenedor_Zona2 };
+        foreach (var c in contenedores)
+        {
+            if (c == null) continue;
+            foreach (Transform hijo in c) Destroy(hijo.gameObject);
+        }
+
+        if (Prefab_TarjetaMejora == null) return;
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        var eslabones = new[] { TipoEslabon.Generacion, TipoEslabon.Procesamiento, TipoEslabon.Distribucion };
+        TipoEslabon cuelloBotella = gc.Cadenas.IdentificarCuelloBotella(pilar);
+
+        for (int e = 0; e < 3; e++)
+        {
+            if (contenedores[e] == null) continue;
+
+            double capEslabon = gc.Cadenas.CalcularCapEslabon(pilar, eslabones[e]);
+            bool esCuello = eslabones[e] == cuelloBotella;
+
+            var tituloZona = e switch { 0 => Text_TituloZona0, 1 => Text_TituloZona1, _ => Text_TituloZona2 };
+            if (tituloZona != null)
+            {
+                string color = esCuello ? "<color=#FF6644>" : "<color=#88FF88>";
+                string marca = esCuello ? " ◄ LIMITA" : "";
+                tituloZona.text = _eslabonNombres[e] + "  " + color
+                    + Formateador.Numero(capEslabon) + "/s" + marca + "</color>";
+            }
+
+            foreach (var def in gc.Cadenas.ObtenerSubMejorasPorEslabon(pilar, eslabones[e]))
+            {
+                var tarjeta = Instantiate(Prefab_TarjetaMejora, contenedores[e]);
+                RellenarTarjetaCadena(tarjeta, def);
+                _tarjetasCadenaActivas.Add((tarjeta, def));
+            }
+        }
+
+        ActualizarTextoCadenaPilar(pilar);
+    }
+
+    void RellenarTarjetaCadena(GameObject tarjeta, DefinicionSubMejoraCadena def)
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        var est = gc.Estado.Cadenas.TryGetValue(def.Id, out var e) ? e : null;
+        bool desbloqueada = est != null && est.Desbloqueada;
+        int nivel = est?.Nivel ?? 0;
+        double ev = gc.Estado.EnergiaVital;
+
+        var tNombre = tarjeta.transform.Find("Text_Nombre")?.GetComponent<TextMeshProUGUI>();
+        var tProd = tarjeta.transform.Find("Text_Produccion")?.GetComponent<TextMeshProUGUI>();
+        var tCoste = tarjeta.transform.Find("Text_Coste")?.GetComponent<TextMeshProUGUI>();
+
+        if (tNombre != null)
+            tNombre.text = desbloqueada
+                ? def.Nombre + "  <size=70%>Nv " + nivel + "/" + def.NivelMax + "</size>"
+                : def.Nombre + "  <size=70%>[Eslabón Nv " + def.NivelEslabonRequerido + "]</size>";
+
+        if (tProd != null)
+            tProd.text = desbloqueada && nivel > 0
+                ? "Cap +" + Formateador.Numero(def.CapPorNivel * nivel) + "/s"
+                : def.Descripcion;
+
+        if (tCoste != null)
+            tCoste.text = desbloqueada
+                ? Formateador.Numero(def.CosteEnNivel(nivel)) + " EV"
+                : "Bloqueada";
+
+        // Ocultar slider de hito (no aplica a cadenas)
+        var slider = tarjeta.transform.Find("Slider_Hito")?.GetComponent<Slider>();
+        if (slider != null) slider.gameObject.SetActive(false);
+
+        // Botones de compra
+        ConfigurarBtnCadena(tarjeta, "Btn_Comprar", def, nivel, 1, ev, desbloqueada);
+        ConfigurarBtnCadena(tarjeta, "Btn_Comprar10", def, nivel, 10, ev, desbloqueada);
+        ConfigurarBtnCadena(tarjeta, "Btn_Comprar100", def, nivel, 100, ev, desbloqueada);
+        ConfigurarBtnMaxCadena(tarjeta, "Btn_ComprarMax", def, nivel, ev, desbloqueada);
+
+        tarjeta.SetActive(desbloqueada || def.EraRequerida <= gc.Estado.EraActual);
+    }
+
+    void ConfigurarBtnCadena(GameObject tarjeta, string nombre, DefinicionSubMejoraCadena def,
+                              int nivel, int cantidad, double ev, bool desbloqueada)
+    {
+        var t = tarjeta.transform.Find(nombre);
+        if (t == null) return;
+        var btn = t.GetComponent<Button>();
+        if (btn == null) return;
+
+        double total = 0;
+        int nTemp = nivel;
+        int comprables = 0;
+        for (int k = 0; k < cantidad && nTemp < def.NivelMax; k++, nTemp++)
+        {
+            total += def.CosteEnNivel(nTemp);
+            comprables++;
+        }
+
+        bool puede = desbloqueada && comprables > 0 && ev >= total;
+        btn.interactable = puede;
+        btn.onClick.RemoveAllListeners();
+
+        var defC = def; var tarC = tarjeta; int cantC = cantidad;
+        btn.onClick.AddListener(() =>
+        {
+            for (int i = 0; i < cantC; i++)
+                if (!GameController.Instance.ComprarSubMejoraCadena(defC.Id)) break;
+            RellenarTarjetaCadena(tarC, defC);
+        });
+
+        var txt = t.GetComponentInChildren<TextMeshProUGUI>();
+        if (txt != null)
+        {
+            string label = cantidad == 1 ? "x1" : "x" + cantidad;
+            txt.text = puede ? label + "\n" + Formateador.Numero(total) : label;
+        }
+    }
+
+    void ConfigurarBtnMaxCadena(GameObject tarjeta, string nombre, DefinicionSubMejoraCadena def,
+                                 int nivel, double ev, bool desbloqueada)
+    {
+        var t = tarjeta.transform.Find(nombre);
+        if (t == null) return;
+        var btn = t.GetComponent<Button>();
+        if (btn == null) return;
+
+        bool puede = desbloqueada && nivel < def.NivelMax && ev >= def.CosteEnNivel(nivel);
+        btn.interactable = puede;
+        btn.onClick.RemoveAllListeners();
+
+        var defC = def; var tarC = tarjeta;
+        btn.onClick.AddListener(() =>
+        {
+            GameController.Instance?.ComprarSubMejoraCadenaMax(defC.Id);
+            RellenarTarjetaCadena(tarC, defC);
+        });
+
+        var txt = t.GetComponentInChildren<TextMeshProUGUI>();
+        if (txt != null) txt.text = "MAX";
+    }
+
+    void ActualizarTarjetasCadena()
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        foreach (var (tarjeta, def) in _tarjetasCadenaActivas)
+        {
+            if (tarjeta == null) continue;
+            RellenarTarjetaCadena(tarjeta, def);
+        }
+
+        // Refrescar títulos de eslabones con indicador de cuello de botella
+        var eslabones = new[] { TipoEslabon.Generacion, TipoEslabon.Procesamiento, TipoEslabon.Distribucion };
+        TipoEslabon cuello = gc.Cadenas.IdentificarCuelloBotella(_categoriaActual);
+        for (int e = 0; e < 3; e++)
+        {
+            double capEslabon = gc.Cadenas.CalcularCapEslabon(_categoriaActual, eslabones[e]);
+            bool esCuello = eslabones[e] == cuello;
+            var tituloZona = e switch { 0 => Text_TituloZona0, 1 => Text_TituloZona1, _ => Text_TituloZona2 };
+            if (tituloZona != null)
+            {
+                string color = esCuello ? "<color=#FF6644>" : "<color=#88FF88>";
+                string marca = esCuello ? " ◄ LIMITA" : "";
+                tituloZona.text = _eslabonNombres[e] + "  " + color
+                    + Formateador.Numero(capEslabon) + "/s" + marca + "</color>";
+            }
+        }
+
+        ActualizarTextoCadenaPilar(_categoriaActual);
+    }
+
+    void ActualizarTextoCadenaPilar(TipoPilar pilar)
+    {
+        var gc = GameController.Instance;
+        if (gc == null || Text_ProduccionCategoria == null) return;
+
+        double capPilar = gc.Cadenas.CalcularCapPilar(pilar);
+        double potencial = 0;
+        foreach (var def in gc.Mejoras.ObtenerPorPilar(pilar))
+        {
+            int nivel = gc.Estado.NivelMejora(def.Id);
+            potencial += def.ProduccionEnNivel(nivel) * def.MultiplicadorHito(nivel);
+        }
+
+        bool limitado = capPilar < potencial && capPilar < double.MaxValue;
+        TipoEslabon cuello = gc.Cadenas.IdentificarCuelloBotella(pilar);
+
+        Text_ProduccionCategoria.text = limitado
+            ? "Produce " + Formateador.Numero(potencial) + "/s → Cap "
+                + Formateador.Numero(capPilar) + "/s  <color=#FF6644>[Mejora "
+                + _eslabonNombres[(int)cuello] + "]</color>"
+            : Formateador.Numero(potencial) + " EV/s  <color=#88FF88>[Sin límite]</color>";
+    }
+
+    void ActualizarResumenCadenas()
+    {
+        if (Text_ResumenCadenas == null) return;
+        var gc = GameController.Instance;
+        if (gc == null) { Text_ResumenCadenas.text = ""; return; }
+
+        var partes = new System.Text.StringBuilder();
+        for (int p = 0; p < 4; p++)
+        {
+            var pilar = (TipoPilar)p;
+            if (!gc.Cadenas.CadenaPilarDesbloqueada(pilar)) continue;
+
+            double cap = gc.Cadenas.CalcularCapPilar(pilar);
+            if (cap >= double.MaxValue) continue; // no hay niveles comprados
+
+            double potencial = 0;
+            foreach (var def in gc.Mejoras.ObtenerPorPilar(pilar))
+            {
+                int nivel = gc.Estado.NivelMejora(def.Id);
+                potencial += def.ProduccionEnNivel(nivel) * def.MultiplicadorHito(nivel);
+            }
+
+            bool limitado = cap < potencial;
+            if (partes.Length > 0) partes.Append("  |  ");
+            partes.Append(_nombresPilar[p].Substring(0, 3));
+            partes.Append(": " + Formateador.Numero(System.Math.Min(cap, potencial)));
+            partes.Append("/" + Formateador.Numero(potencial));
+            partes.Append(limitado ? " [!]" : " [OK]");
+        }
+
+        Text_ResumenCadenas.text = partes.ToString();
     }
 
     // ══════════════════════════════════════════════════════════════════════
