@@ -4322,6 +4322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5715f3958d5b7343b364e9e15fd4dfb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  eraManager: {fileID: 745651878}
   Panel_Principal: {fileID: 254986436}
   Panel_Categoria: {fileID: 2005060220}
   Panel_Prestige: {fileID: 1221359053}
