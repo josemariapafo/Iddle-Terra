@@ -32,11 +32,11 @@ namespace Terra.Data.Catalogos
                 "era1_earth_day", ""),
 
             new DefinicionEra(2, "Primeros Océanos",      "El agua líquida cubre los primeros continentes",
-                new CondicionEra(5, 5_000),
+                new CondicionEra(4, 2_000),
                 "era2_earth_day", ""),
 
             new DefinicionEra(3, "Vida Marina",           "El mar explota con vida en la era Cámbrica",
-                new CondicionEra(12, 80_000, new[]{"sin_01"}),
+                new CondicionEra(10, 40_000, new[]{"sin_01"}),
                 "era3_earth_day", ""),
 
             new DefinicionEra(4, "Pangea",                "Un supercontinente único domina el planeta",

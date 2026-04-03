@@ -32,7 +32,7 @@ namespace Terra.Systems
         /// </summary>
         // Producción base mínima — garantiza que el juego siempre avanza
         // aunque el jugador no haya comprado ninguna mejora todavía
-        private const double PRODUCCION_BASE_MINIMA = 0.5;
+        private const double PRODUCCION_BASE_MINIMA = 1.0;
 
         public double Calcular(EstadoJuego estado)
         {
