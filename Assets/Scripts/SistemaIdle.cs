@@ -122,7 +122,6 @@ public class SistemaIdle : MonoBehaviour
     public static event Action<double> OnProduccionChanged;
     public static event Action<DatosMejora> OnMejoraComprada;
     public static event Action<DatosSinergia> OnSinergiaActivada;
-    public static event Action<int> OnEraCompletada;
     public static event Action OnPrestigeDisponible;
 
     // ── UNITY ─────────────────────────────────────────────────────────────
