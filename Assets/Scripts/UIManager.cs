@@ -88,6 +88,23 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI Text_DescripcionEra;
     public Button Btn_ContinuarEra;
 
+    // ── Panel Evolución ─────────────────────────────────────────────────
+    [Header("Panel Evolucion")]
+    public GameObject Panel_Evolucion;
+    public Transform Contenedor_Nodos;
+    public GameObject Prefab_NodoArbol;
+    public Button Btn_AbrirEvolucion;
+    public Button Btn_CerrarEvolucion;
+
+    [Header("Popup Nodo")]
+    public GameObject Panel_PopupNodo;
+    public TextMeshProUGUI Text_PopupNombre;
+    public TextMeshProUGUI Text_PopupDescripcion;
+    public TextMeshProUGUI Text_PopupEfecto;
+    public TextMeshProUGUI Text_PopupCoste;
+    public Button Btn_ComprarNodo;
+    public Button Btn_CerrarPopup;
+
     // ── Indicador estancamiento ───────────────────────────────────────────
     [Header("Indicador estancamiento")]
     public GameObject Indicador_Estancamiento;
@@ -122,6 +139,9 @@ public class UIManager : MonoBehaviour
         = new List<(GameObject, DefinicionMejora)>();
     private readonly List<(GameObject tarjeta, DefinicionSubMejoraCadena def)> _tarjetasCadenaActivas
         = new List<(GameObject, DefinicionSubMejoraCadena)>();
+    private readonly List<(GameObject nodo, DefinicionNodo def)> _nodosActivos
+        = new List<(GameObject, DefinicionNodo)>();
+    private string _nodoSeleccionadoId;
 
     static readonly string[][] _zonasNombres =
     {
@@ -162,6 +182,8 @@ public class UIManager : MonoBehaviour
         }
         if (Panel_Prestige != null && Panel_Prestige.activeSelf)
             ActualizarPrestige();
+        if (Panel_Evolucion != null && Panel_Evolucion.activeSelf)
+            ActualizarNodosArbol();
     }
 
     void OnDestroy()
@@ -182,6 +204,10 @@ public class UIManager : MonoBehaviour
 
         Btn_Evolucionar?.onClick.AddListener(OnClickEvolucionar);
         Btn_CerrarCategoria?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+        Btn_AbrirEvolucion?.onClick.AddListener(() => AbrirEvolucion());
+        Btn_CerrarEvolucion?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+        Btn_ComprarNodo?.onClick.AddListener(OnClickComprarNodo);
+        Btn_CerrarPopup?.onClick.AddListener(() => Panel_PopupNodo?.SetActive(false));
         Btn_TabProduccion?.onClick.AddListener(() => CambiarTab(false));
         Btn_TabInfraestructura?.onClick.AddListener(() => CambiarTab(true));
         Btn_CerrarMeta?.onClick.AddListener(CerrarMetaManual);
@@ -745,6 +771,152 @@ public class UIManager : MonoBehaviour
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // PANEL EVOLUCIÓN (ÁRBOL)
+    // ══════════════════════════════════════════════════════════════════════
+
+    static readonly Color _colorBloqueado = new Color(0.4f, 0.4f, 0.4f);
+    static readonly Color _colorComprable = new Color(1f, 0.85f, 0.2f);
+    static readonly Color _colorComprado  = new Color(0.3f, 0.9f, 0.3f);
+
+    void AbrirEvolucion()
+    {
+        GenerarNodosArbol();
+        MostrarPantalla(Panel_Evolucion);
+    }
+
+    void GenerarNodosArbol()
+    {
+        _nodosActivos.Clear();
+        if (Contenedor_Nodos == null || Prefab_NodoArbol == null) return;
+
+        foreach (Transform hijo in Contenedor_Nodos)
+            Destroy(hijo.gameObject);
+
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        for (int era = 1; era <= 8; era++)
+        {
+            var nodosDeLaEra = gc.Arbol.ObtenerPorEra(era);
+            foreach (var def in nodosDeLaEra)
+            {
+                var nodoGO = Instantiate(Prefab_NodoArbol, Contenedor_Nodos);
+                RellenarNodoArbol(nodoGO, def);
+                _nodosActivos.Add((nodoGO, def));
+            }
+        }
+    }
+
+    void RellenarNodoArbol(GameObject nodoGO, DefinicionNodo def)
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        var est = gc.Estado.Nodos.TryGetValue(def.Id, out var n) ? n : null;
+        bool desbloqueado = est != null && est.Desbloqueado;
+        int nivel = est?.Nivel ?? 0;
+        bool comprado = nivel > 0;
+        bool nivelMax = nivel >= def.NivelMax;
+
+        // Color de fondo
+        Color color;
+        if (comprado) color = nivelMax ? new Color(0.2f, 0.7f, 0.2f) : _colorComprado;
+        else if (desbloqueado) color = _colorComprable;
+        else color = _colorBloqueado;
+
+        var img = nodoGO.GetComponent<Image>();
+        if (img != null) img.color = color;
+
+        // Texto
+        var txt = nodoGO.GetComponentInChildren<TextMeshProUGUI>();
+        if (txt != null)
+        {
+            if (!desbloqueado)
+                txt.text = "?\n<size=60%>Era " + def.EraRequerida + "</size>";
+            else if (nivelMax)
+                txt.text = def.Nombre + "\n<size=60%>MAX</size>";
+            else
+                txt.text = def.Nombre + "\n<size=60%>Nv " + nivel + "/" + def.NivelMax + "</size>";
+        }
+
+        // Visibilidad: mostrar si la era está desbloqueada o es la siguiente
+        nodoGO.SetActive(def.EraRequerida <= gc.Estado.EraActual + 1);
+
+        // Click → abrir popup
+        var btn = nodoGO.GetComponent<Button>();
+        if (btn != null)
+        {
+            btn.onClick.RemoveAllListeners();
+            var defC = def;
+            btn.onClick.AddListener(() => MostrarPopupNodo(defC));
+            btn.interactable = desbloqueado;
+        }
+    }
+
+    void MostrarPopupNodo(DefinicionNodo def)
+    {
+        var gc = GameController.Instance;
+        if (gc == null || Panel_PopupNodo == null) return;
+
+        _nodoSeleccionadoId = def.Id;
+        var est = gc.Estado.Nodos.TryGetValue(def.Id, out var n) ? n : null;
+        int nivel = est?.Nivel ?? 0;
+        bool nivelMax = nivel >= def.NivelMax;
+
+        if (Text_PopupNombre != null)
+            Text_PopupNombre.text = def.Nombre + (nivelMax ? "  [MAX]" : "  Nv " + nivel + "/" + def.NivelMax);
+
+        if (Text_PopupDescripcion != null)
+            Text_PopupDescripcion.text = def.Descripcion;
+
+        if (Text_PopupEfecto != null)
+        {
+            double multActual = def.MultiplicadorTotal(nivel);
+            double multSiguiente = nivelMax ? multActual : def.MultiplicadorTotal(nivel + 1);
+            Text_PopupEfecto.text = nivelMax
+                ? "Efecto: x" + multActual.ToString("F2")
+                : "Efecto: x" + multActual.ToString("F2") + " → x" + multSiguiente.ToString("F2");
+        }
+
+        if (Text_PopupCoste != null)
+            Text_PopupCoste.text = nivelMax
+                ? "Completado"
+                : "Coste: " + Formateador.Numero(def.CosteEnNivel(nivel)) + " EV";
+
+        if (Btn_ComprarNodo != null)
+        {
+            bool puede = !nivelMax && gc.Estado.EnergiaVital >= def.CosteEnNivel(nivel);
+            Btn_ComprarNodo.interactable = puede;
+            var txtBtn = Btn_ComprarNodo.GetComponentInChildren<TextMeshProUGUI>();
+            if (txtBtn != null) txtBtn.text = nivelMax ? "MAX" : "COMPRAR";
+        }
+
+        Panel_PopupNodo.SetActive(true);
+    }
+
+    void OnClickComprarNodo()
+    {
+        if (string.IsNullOrEmpty(_nodoSeleccionadoId)) return;
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        gc.ComprarNodoArbol(_nodoSeleccionadoId);
+
+        var def = gc.Arbol.BuscarDefinicion(_nodoSeleccionadoId);
+        if (def != null) MostrarPopupNodo(def);
+        ActualizarNodosArbol();
+    }
+
+    void ActualizarNodosArbol()
+    {
+        foreach (var (nodoGO, def) in _nodosActivos)
+        {
+            if (nodoGO == null) continue;
+            RellenarNodoArbol(nodoGO, def);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // PANEL PRESTIGE
     // ══════════════════════════════════════════════════════════════════════
 
@@ -1007,6 +1179,8 @@ public class UIManager : MonoBehaviour
         Panel_Principal?.SetActive(pantalla == Panel_Principal);
         Panel_Categoria?.SetActive(pantalla == Panel_Categoria);
         Panel_Prestige?.SetActive(pantalla == Panel_Prestige);
+        Panel_Evolucion?.SetActive(pantalla == Panel_Evolucion);
+        Panel_PopupNodo?.SetActive(false);
         // Evento y EraDesbloqueada se manejan como overlays, no cierran el resto
     }
 }

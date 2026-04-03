@@ -163,6 +163,9 @@ namespace Terra.Systems
 
         public DefinicionNodo[] ObtenerPorEra(int era) =>
             _definiciones.Where(d => d.EraRequerida == era).ToArray();
+
+        public DefinicionNodo BuscarDefinicion(string id) =>
+            _definiciones.FirstOrDefault(d => d.Id == id);
     }
 
     // ══════════════════════════════════════════════════════════════════════
