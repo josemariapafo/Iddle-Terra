@@ -15,14 +15,14 @@ public class TapManager : MonoBehaviour
     public GameObject Prefab_NumeroFlotante;
 
     [Header("Tap")]
-    public float segundosPorTap = 0.5f;
+    public float segundosPorTap = 5f;
     public float umbralArrastre = 12f;
 
     [Header("Combo")]
-    public int tapsParaCombo = 10;
-    public float duracionCombo = 3f;
+    public int tapsParaCombo = 5;
+    public float duracionCombo = 10f;
     public float multiplicadorCombo = 2f;
-    public float tiempoResetCombo = 1.5f;
+    public float tiempoResetCombo = 3f;
 
     [Header("UI Combo")]
     public Slider Slider_Combo;
@@ -226,6 +226,7 @@ public class TapManager : MonoBehaviour
         if (Panel_Combo != null) Panel_Combo.SetActive(false);
         if (Text_ComboActivo != null) Text_ComboActivo.gameObject.SetActive(true);
         ActualizarUIComboActivo();
+        EventBus.Publicar(new EventoComboActivado());
     }
 
     void TerminarCombo()
