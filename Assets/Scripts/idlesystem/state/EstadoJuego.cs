@@ -124,6 +124,44 @@ namespace Terra.State
         public EstadoDesafio(string id) { Id = id; Activo = false; Completado = false; }
     }
 
+    // ── Estado de sub-mejora de cadena ────────────────────────────────────
+    [Serializable]
+    public class EstadoSubMejoraCadena
+    {
+        public string Id;
+        public int Nivel;
+        public bool Desbloqueada;
+
+        public EstadoSubMejoraCadena(string id)
+        {
+            Id = id; Nivel = 0; Desbloqueada = false;
+        }
+    }
+
+    // ── Estado de misión activa ───────────────────────────────────────────
+    [Serializable]
+    public class EstadoMision
+    {
+        public string Id;
+        public double ProgresoActual;
+        public bool Completada;
+
+        public EstadoMision(string id)
+        {
+            Id = id; ProgresoActual = 0; Completada = false;
+        }
+    }
+
+    // ── Estado de nodo del Códice ─────────────────────────────────────────
+    [Serializable]
+    public class EstadoNodoCodice
+    {
+        public string Id;
+        public int Nivel;
+
+        public EstadoNodoCodice(string id) { Id = id; Nivel = 0; }
+    }
+
     // ── Estado central del juego ──────────────────────────────────────────
     [Serializable]
     public class EstadoJuego
@@ -163,6 +201,28 @@ namespace Terra.State
         // Desafíos
         public Dictionary<string, EstadoDesafio> Desafios
             = new Dictionary<string, EstadoDesafio>();
+
+        // Cadenas (cuello de botella per-pilar)
+        public Dictionary<string, EstadoSubMejoraCadena> Cadenas
+            = new Dictionary<string, EstadoSubMejoraCadena>();
+
+        // Misiones
+        public EstadoMision[] MisionesActivas = new EstadoMision[3];
+        public HashSet<string> MisionesCompletadas = new HashSet<string>();
+
+        // Códice Fósil
+        public Dictionary<string, EstadoNodoCodice> NodosCodice
+            = new Dictionary<string, EstadoNodoCodice>();
+
+        // Bifurcaciones evolutivas (pilar -> opción 0 o 1, -1 = no elegida)
+        public Dictionary<TipoPilar, int> Bifurcaciones
+            = new Dictionary<TipoPilar, int>();
+
+        // UI - desbloqueos progresivos
+        public double EVMaximoAlcanzado;
+        public bool EvolucionUIDesbloqueada;
+        public bool PrestigeUIDesbloqueado;
+        public bool CodiceUIDesbloqueado;
 
         // Multiplicadores temporales (eventos)
         public double MultiplicadorEvento = 1.0;

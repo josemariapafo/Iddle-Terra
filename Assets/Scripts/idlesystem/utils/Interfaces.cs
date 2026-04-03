@@ -33,4 +33,12 @@ namespace Terra.Core
     public enum TipoEvento { Positivo, Negativo, Neutral }
 
     public enum TipoBonus { MultiplicadorEV, MultiplicadorPilar, RecursoExtra, DesbloqueoInstante }
+
+    public enum TipoEslabon { Generacion, Procesamiento, Distribucion }
+
+    public enum TipoMision { Compra, Produccion, Sinergia, Era, Prestige, Combo, CuelloBotella }
+
+    public enum TipoRecompensa { EVInstante, MultiplicadorTemporal, NivelNodoGratis, FosilesExtra }
+
+    public enum TipoCodice { Abundancia, Eficiencia, Dominio }
 }

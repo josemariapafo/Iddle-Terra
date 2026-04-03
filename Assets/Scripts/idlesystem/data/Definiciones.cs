@@ -256,6 +256,103 @@ namespace Terra.Data
         }
     }
 
+    // ── Definición de sub-mejora de cadena (inmutable) ─────────────────────
+    [Serializable]
+    public class DefinicionSubMejoraCadena
+    {
+        public string Id;
+        public string Nombre;
+        public string Descripcion;
+        public TipoPilar Pilar;
+        public TipoEslabon Eslabon;
+        public double CapPorNivel;              // cuánto cap añade por nivel
+        public double CosteBase;
+        public double MultiplicadorCoste;       // default 1.15
+        public int NivelMax;
+        public int NivelEslabonRequerido;       // nivel acumulado del eslabón para desbloquear
+        public int EraRequerida;
+
+        public DefinicionSubMejoraCadena(
+            string id, string nombre, string desc,
+            TipoPilar pilar, TipoEslabon eslabon,
+            double capPorNivel, double costeBase,
+            int nivelMax = 100,
+            int nivelEslabonReq = 0, int eraReq = 1,
+            double multCoste = 1.15)
+        {
+            Id = id; Nombre = nombre; Descripcion = desc;
+            Pilar = pilar; Eslabon = eslabon;
+            CapPorNivel = capPorNivel; CosteBase = costeBase;
+            MultiplicadorCoste = multCoste; NivelMax = nivelMax;
+            NivelEslabonRequerido = nivelEslabonReq;
+            EraRequerida = eraReq;
+        }
+
+        public double CosteEnNivel(int nivel) =>
+            Math.Floor(CosteBase * Math.Pow(MultiplicadorCoste, nivel));
+    }
+
+    // ── Definición de misión (inmutable) ──────────────────────────────────
+    [Serializable]
+    public class DefinicionMision
+    {
+        public string Id;
+        public string Nombre;
+        public string Descripcion;
+        public TipoMision Tipo;
+        public double ValorObjetivo;            // cuánto hay que alcanzar
+        public TipoRecompensa TipoRecompensa;
+        public double ValorRecompensa;
+        public int EraMinima;
+        public string MisionSiguienteId;        // misión que se desbloquea al completar (progresiva)
+
+        public DefinicionMision(
+            string id, string nombre, string desc,
+            TipoMision tipo, double valorObj,
+            TipoRecompensa tipoRec, double valorRec,
+            int eraMin = 1, string siguienteId = null)
+        {
+            Id = id; Nombre = nombre; Descripcion = desc;
+            Tipo = tipo; ValorObjetivo = valorObj;
+            TipoRecompensa = tipoRec; ValorRecompensa = valorRec;
+            EraMinima = eraMin; MisionSiguienteId = siguienteId;
+        }
+    }
+
+    // ── Definición de nodo del Códice Fósil (inmutable) ──────────────────
+    [Serializable]
+    public class DefinicionNodoCodice
+    {
+        public string Id;
+        public string Nombre;
+        public string Descripcion;
+        public TipoCodice Rama;
+        public double CosteFosiles;             // coste base en fósiles
+        public double MultiplicadorCostePorNivel; // default 2.0
+        public TipoBonus TipoBonus;
+        public double ValorBonusPorNivel;
+        public int NivelMax;
+        public string NodoPrevioId;             // prerequisito en el árbol
+
+        public DefinicionNodoCodice(
+            string id, string nombre, string desc,
+            TipoCodice rama, double costeFosiles,
+            TipoBonus tipoBonus, double valorBonus,
+            int nivelMax = 5,
+            string nodoPrevio = null,
+            double multCoste = 2.0)
+        {
+            Id = id; Nombre = nombre; Descripcion = desc;
+            Rama = rama; CosteFosiles = costeFosiles;
+            MultiplicadorCostePorNivel = multCoste;
+            TipoBonus = tipoBonus; ValorBonusPorNivel = valorBonus;
+            NivelMax = nivelMax; NodoPrevioId = nodoPrevio;
+        }
+
+        public double CosteEnNivel(int nivel) =>
+            Math.Floor(CosteFosiles * Math.Pow(MultiplicadorCostePorNivel, nivel));
+    }
+
     // ── Snapshot de estado para condiciones ───────────────────────────────
     // Estructura de solo lectura que se pasa a condiciones de logros/desafíos
     public struct EstadoSnapshot

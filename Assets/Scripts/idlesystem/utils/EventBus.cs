@@ -58,4 +58,10 @@ namespace Terra.Core
     public readonly struct EventoRecursoDesbloqueado { public readonly string IdRecurso; public EventoRecursoDesbloqueado(string id) => IdRecurso = id; }
     public readonly struct EventoDesafioCompletado { public readonly string IdDesafio; public EventoDesafioCompletado(string id) => IdDesafio = id; }
     public readonly struct EventoHitoAlcanzado     { public readonly string IdMejora; public readonly int Nivel; public EventoHitoAlcanzado(string id, int n) { IdMejora = id; Nivel = n; } }
+    public readonly struct EventoCadenaComprada    { public readonly string IdSubMejora; public readonly int NuevoNivel; public EventoCadenaComprada(string id, int n) { IdSubMejora = id; NuevoNivel = n; } }
+    public readonly struct EventoMisionCompletada  { public readonly string IdMision; public EventoMisionCompletada(string id) => IdMision = id; }
+    public readonly struct EventoNodoCodiceComprado { public readonly string IdNodo; public readonly int NuevoNivel; public EventoNodoCodiceComprado(string id, int n) { IdNodo = id; NuevoNivel = n; } }
+    public readonly struct EventoBifurcacionElegida { public readonly TipoPilar Pilar; public readonly int Opcion; public EventoBifurcacionElegida(TipoPilar p, int o) { Pilar = p; Opcion = o; } }
+    public readonly struct EventoComboActivado     { }
+    public readonly struct EventoUIDesbloqueado    { public readonly string Elemento; public EventoUIDesbloqueado(string e) => Elemento = e; }
 }

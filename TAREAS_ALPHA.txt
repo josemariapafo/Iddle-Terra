@@ -1,0 +1,759 @@
+================================================================================
+ IDDLE TERRA - LISTA DE TAREAS PARA EL ALPHA
+ Generado: 2026-04-03
+ Orden seguro de implementacion (nunca se rompe nada al avanzar)
+================================================================================
+
+ESTADO ACTUAL DEL CODIGO
+-------------------------
+FUNCIONA: 4 pilares (84 mejoras), 12 sinergias, 8 eras, 3 prestiges,
+          32 nodos evolucion (sin UI), 15 eventos, 20 logros, racha diaria,
+          offline 12h, guardado JSON/PlayerPrefs, EventBus tipado.
+
+YA EXISTE: TapManager.cs con combo/numeros flotantes completo,
+           DefinicionDesafio + EstadoDesafio + EventoDesafioCompletado,
+           EstadoRecurso para recursos secundarios.
+
+FALTA:     Cadenas (bottleneck), misiones, auto-compra, Codice Fosil,
+           UI arbol evolucion, revelacion progresiva, especializacion pilares,
+           desafios (sistema), bifurcaciones, Codice Genetico,
+           eventos con multiples opciones.
+
+
+================================================================================
+ BLOQUE 1: CIMIENTOS
+ Extiende datos sin romper nada existente
+================================================================================
+
+TAREA 1 - Extender modelo de datos base
+  Prioridad: CRITICA
+  Depende de: Nada
+
+  Interfaces.cs:
+    - Nuevo enum TipoEslabon { Generacion, Procesamiento, Distribucion }
+    - Nuevo enum TipoMision { Compra, Produccion, Sinergia, Era, Prestige, Combo, CuelloBotella }
+    - Nuevo enum TipoRecompensa { EVInstante, MultiplicadorTemporal, NivelNodoGratis, FosilesExtra }
+    - Nuevo enum TipoCodice { Abundancia, Eficiencia, Dominio }
+
+  Definiciones.cs:
+    - DefinicionSubMejoraCadena (id, nombre, pilar, eslabon, capPorNivel,
+      costeBase, multCoste, nivelMax, nivelEslabonRequerido, eraRequerida)
+    - DefinicionMision (id, nombre, tipo, descripcion, valorObjetivo,
+      tipoRecompensa, valorRecompensa, eraMinima, misionSiguienteId)
+    - DefinicionNodoCodice (id, nombre, rama, descripcion, costeFosiles,
+      tipoBonus, valorBonusPorNivel, nivelMax, nodoPrevioId)
+
+  EstadoJuego.cs:
+    - Dictionary<string, EstadoSubMejoraCadena> Cadenas (id -> nivel)
+    - EstadoMisionActiva[] MisionesActivas (3 slots)
+    - HashSet<string> MisionesCompletadas
+    - Dictionary<string, int> NodosCodice (id -> nivel)
+    - Dictionary<TipoPilar, int> Bifurcaciones (pilar -> opcion 0/1)
+    - bool[] PilaresUIDesbloqueados (4)
+    - bool EvolucionUIDesbloqueada, PrestigeUIDesbloqueado, CodiceUIDesbloqueado
+
+  EventBus.cs:
+    - EventoCadenaComprada { string IdSubMejora, int NuevoNivel }
+    - EventoMisionCompletada { string IdMision }
+    - EventoNodoCodiceComprado { string IdNodo, int NuevoNivel }
+    - EventoBifurcacionElegida { TipoPilar Pilar, int Opcion }
+    - EventoComboActivado { } (para misiones de combo)
+    - EventoUIDesbloqueado { string Elemento }
+
+  Resultado: Compila sin errores. Nada existente cambia.
+
+------------------------------------------------------------------------
+
+TAREA 2 - Ajuste de balance early game
+  Prioridad: CRITICA
+  Depende de: Nada (paralela a T1)
+
+  CalculadorProduccion.cs:
+    - PRODUCCION_BASE_MINIMA: 0.5 -> 1.0
+
+  CatalogoMejoras.cs:
+    - Reducir CosteBase de mejoras Era 1 (~40% menos)
+      atm_01: 8 -> 5, oce_01: 10 -> 6, tie_01: 10 -> 6, vid_01: 12 -> 8
+    - MultiplicadorCoste para Eras 1-3: 1.12 -> 1.10
+
+  CatalogosResto.cs:
+    - Era 2: NivelTotalPorPilar 5->4, EVRequerida 5000->2000
+    - Era 3: NivelTotalPorPilar 12->10, EVRequerida 80000->40000
+
+  Resultado: Primera compra posible en <10 seg, Era 2 en ~5 min.
+
+------------------------------------------------------------------------
+
+TAREA 3 - Ajustar TapManager existente + integrar con EventBus
+  Prioridad: CRITICA
+  Depende de: T1
+
+  NOTA: TapManager.cs YA FUNCIONA con combo, numeros flotantes, input
+  touch+mouse, raycast contra planeta, y soporte de meteoritos.
+  NO hay que crear un SistemaTap.cs nuevo. Solo ajustar y conectar.
+
+  TapManager.cs:
+    - segundosPorTap: 0.5 -> 5.0 (5 segundos de produccion por tap)
+    - tapsParaCombo: 10 -> 5 (mas facil activar combo)
+    - tiempoResetCombo: 1.5 -> 3.0 (mas ventana para combo)
+    - duracionCombo: 3 -> 10 (combo dura mas, mas satisfactorio)
+    - Publicar EventoComboActivado al activar combo (para misiones)
+    - Publicar EventoTapRealizado (opcional, para stats)
+
+  Resultado: Tap da 10x mas EV. Combo se activa con 5 taps en 3s y dura 10s.
+
+
+================================================================================
+ BLOQUE 2: CADENAS PER-PILAR (mecanica core nueva)
+================================================================================
+
+TAREA 4 - Catalogo de cadenas
+  Prioridad: CRITICA
+  Depende de: T1
+
+  Crear CatalogoCadenas.cs en idlesystem/data/Catalogos/:
+    4 pilares x 3 eslabones x 4 sub-mejoras = 48 definiciones
+
+    TIERRA (Era 1):
+      Extraccion Mineral:
+        - Recogida Manual (cap +3/s por nivel, coste 15, max 100)
+        - Excavacion Profunda (cap +15/s, coste 200, max 80, eslabon nivel 10)
+        - Perforacion Sismica (cap +80/s, coste 3K, max 60, eslabon nivel 30)
+        - Extractor de Manto (cap +500/s, coste 50K, max 40, eslabon nivel 60)
+      Presion Tectonica:
+        - Plumas Termicas (cap +2.5/s, coste 12, max 100)
+        - Subduccion Activa (cap +12/s, coste 150, max 80, eslabon nivel 10)
+        - Compresion Continental (cap +70/s, coste 2.5K, max 60, eslabon nivel 30)
+        - Motor Tectonico (cap +450/s, coste 40K, max 40, eslabon nivel 60)
+      Erosion y Sedimentacion:
+        - Desgaste Basico (cap +4/s, coste 20, max 100)
+        - Rios Primordiales (cap +18/s, coste 250, max 80, eslabon nivel 10)
+        - Delta Fertil (cap +90/s, coste 4K, max 60, eslabon nivel 30)
+        - Ciclo Sedimentario (cap +550/s, coste 60K, max 40, eslabon nivel 60)
+
+    OCEANOS (Era 2):
+      Volumen: Charcos -> Mares Interiores -> Oceano Global -> Abismo
+      Corrientes: Mareas Basicas -> Giros Oceanicos -> Termohalina -> Circulacion Abisal
+      Profundidad: Zona Fotica -> Mesopelágica -> Batial -> Abisal
+
+    ATMOSFERA (Era 3):
+      Composicion: Desgasificacion -> Volcanismo -> Fotolisis -> Regulacion
+      Circulacion: Brisas -> Celdas de Hadley -> Jet Stream -> Circulacion Global
+      Densidad: Capa Fina -> Troposfera -> Estratosfera -> Magnetosfera
+
+    VIDA (Era 4):
+      Biomasa: Caldo Primordial -> Estromatolitos -> Bosques -> Megafauna
+      Cadena Trofica: Autotrofos -> Herbivoros -> Depredadores -> Apex
+      Diversidad: Monocultivo -> Nicho Doble -> Red Ecologica -> Simbiosis Global
+
+  (Numeros exactos de cap/coste se ajustan en balance pass)
+
+------------------------------------------------------------------------
+
+TAREA 5 - Sistema de cadenas
+  Prioridad: CRITICA
+  Depende de: T4
+
+  Crear SistemaCadenas.cs en idlesystem/systems/:
+    - Patron ISistema + AsignarEstado (como el resto de sistemas)
+    - AsignarEstado(): crea EstadoSubMejoraCadena para cada definicion
+    - ComprarNivel(idSubMejora): gasta EV, incrementa nivel, publica evento
+    - ComprobarDesbloqueos(): desbloquea sub-mejoras por nivel de eslabon y era
+    - CalcularCapEslabon(pilar, tipoEslabon): suma de (capPorNivel * nivel) de sub-mejoras
+    - CalcularCapPilar(pilar): min(generacion, procesamiento, distribucion)
+    - IdentificarCuelloBotella(pilar): devuelve cual eslabon limita
+    - CadenaPilarDesbloqueada(pilar): true si la era actual >= era de desbloqueo del pilar
+    - ObtenerSubMejorasPorEslabon(pilar, eslabon): para la UI
+
+------------------------------------------------------------------------
+
+TAREA 6 - Integrar cadenas en produccion
+  Prioridad: CRITICA
+  Depende de: T5
+
+  CalculadorProduccion.cs:
+    - Recibir referencia a SistemaCadenas (via constructor o setter)
+    - Modificar Calcular(): la produccion de cada pilar pasa por
+      min(produccion_pilar, cap_cadena_pilar) ANTES de sumar al total
+    - Si la cadena del pilar no esta desbloqueada, no aplica cap
+    - Nuevo metodo: CalcularDesglosePorPilar(estado) devuelve
+      { potencial, capCadena, efectivo } por pilar para la UI
+
+  GameController.cs:
+    - Instanciar SistemaCadenas en Inicializar()
+    - AsignarEstado
+    - Pasar SistemaCadenas al CalculadorProduccion
+    - API publica: ComprarSubMejoraCadena(id) => Cadenas.ComprarNivel(id)
+
+------------------------------------------------------------------------
+
+TAREA 7 - Guardar cadenas
+  Prioridad: CRITICA
+  Depende de: T6
+
+  SistemaGuardado.cs:
+    - Agregar campo "cadenas" a DatosSerializables (string, formato id:nivel|)
+    - Serializar niveles de sub-mejoras en Guardar()
+    - Deserializar en Cargar()
+
+  SistemaPrestige.cs (Resetear):
+    - Reset Parcial: resetear niveles de cadenas a 0
+    - Reset Total: igual + cualquier bonus de Codice asociado
+
+------------------------------------------------------------------------
+
+TAREA 8 - UI de cadenas
+  Prioridad: CRITICA
+  Depende de: T6
+
+  UIManager.cs:
+    - Pantalla principal: widget resumen bajo EV/s mostrando estado por pilar
+      Ejemplo: "Tierra: 450/800 [!]  |  Oceanos: 400/400 [OK]"
+      Solo mostrar pilares cuya cadena este desbloqueada
+    - Panel_Categoria: nueva pestana [Produccion] [Infraestructura]
+      Produccion = mejoras existentes (ya funciona)
+      Infraestructura = 3 eslabones con sus sub-mejoras comprables
+    - Cada eslabon muestra: nombre, cap actual, indicador si es cuello de botella
+    - Reusar estilo de Prefab_TarjetaMejora para sub-mejoras de cadena
+
+  Trabajo Unity necesario:
+    - Crear botones de pestana en Panel_Categoria
+    - Crear contenedor para eslabones
+    - Crear prefab de tarjeta de sub-mejora (o reusar existente)
+
+
+================================================================================
+ BLOQUE 3: ARBOL DE EVOLUCION (UI para sistema existente)
+================================================================================
+
+TAREA 9 - Panel de evolucion
+  Prioridad: CRITICA
+  Depende de: Nada nuevo (SistemaArbol ya funciona 100%)
+
+  Crear seccion en UIManager.cs para Panel_Evolucion:
+    - Mostrar 32 nodos como botones en layout de arbol
+    - Lineas de conexion padre->hijo (UI Lines o Image)
+    - Estados: gris (bloqueado), dorado (comprable), verde (comprado)
+    - Tap en nodo: popup con nombre, descripcion, coste, efecto actual
+    - Boton comprar: llama GameController.ComprarNodoArbol(id) (ya existe)
+    - Boton en pantalla principal para abrir panel
+    - Boton cerrar para volver a principal
+
+  Trabajo Unity necesario:
+    - Crear Panel_Evolucion en la escena
+    - Posicionar nodos manualmente o con layout algoritmico
+    - Crear prefab de nodo (boton + texto + fondo coloreado)
+
+
+================================================================================
+ BLOQUE 4: SISTEMA DE MISIONES
+================================================================================
+
+TAREA 10 - Catalogo de misiones
+  Prioridad: ALTA
+  Depende de: T1
+
+  Crear CatalogoMisiones.cs en idlesystem/data/Catalogos/:
+    ~30 misiones progresivas:
+
+    Tipo Compra:
+      "Compra 5 mejoras" -> "Compra 15" -> "Compra 50" -> "Compra 150"
+      "Compra 3 mejoras de Tierra" -> "Compra 10 de Tierra"
+
+    Tipo Produccion:
+      "Alcanza 100 EV/s" -> "1K" -> "10K" -> "100K" -> "1M"
+
+    Tipo Sinergia:
+      "Desbloquea tu primera sinergia" -> "3 sinergias" -> "6 sinergias"
+
+    Tipo Era:
+      "Avanza a Era 2" -> "Era 3" -> "Era 4"
+
+    Tipo Prestige:
+      "Haz tu primera Extincion" -> "Acumula 10 Fosiles"
+
+    Tipo Combo:
+      "Activa 1 Pulso Sismico" -> "3 Pulsos" -> "10 Pulsos"
+
+    Tipo CuelloBotella:
+      "Arregla un cuello de botella" -> "Arregla 5"
+
+    Recompensas:
+      - EVInstante: 30s de produccion actual
+      - MultiplicadorTemporal: x2 durante 30-60s
+      - FosilesExtra: +1-5 fosiles gratis
+      - NivelNodoGratis: +1 nivel en nodo aleatorio desbloqueado
+
+------------------------------------------------------------------------
+
+TAREA 11 - Sistema de misiones
+  Prioridad: ALTA
+  Depende de: T10
+
+  Crear SistemaMisiones.cs en idlesystem/systems/:
+    - Pool de misiones disponibles filtradas por era y misiones previas completadas
+    - 3 misiones activas simultaneas (elegidas al azar del pool)
+    - Suscripcion a EventBus: EventoMejoraComprada, EventoSinergiaActivada,
+      EventoEraAvanzada, EventoPrestigeRealizado, EventoComboActivado,
+      EventoCadenaComprada -> incrementar contadores
+    - Chequeo de condiciones cada 5 segundos
+    - Al completar: otorgar recompensa, publicar EventoMisionCompletada,
+      sacar siguiente mision del pool
+    - Misiones progresivas: completar "Compra 5" hace disponible "Compra 15"
+
+  GameController.cs:
+    - Instanciar SistemaMisiones
+    - AsignarEstado
+    - Tick en ActualizarSistemas
+
+------------------------------------------------------------------------
+
+TAREA 12 - Guardar + UI misiones
+  Prioridad: ALTA
+  Depende de: T11
+
+  SistemaGuardado.cs:
+    - Serializar misiones activas (id + progreso actual) y completadas
+
+  UIManager.cs:
+    - Widget en pantalla principal: 3 lineas mostrando mision + barra progreso
+    - Notificacion al completar (banner temporal)
+    - Visible desde Era 2
+
+  Trabajo Unity: crear contenedor de misiones en Panel_Principal
+
+
+================================================================================
+ BLOQUE 5: REVELACION PROGRESIVA DE UI
+================================================================================
+
+TAREA 13 - Desbloqueo progresivo de paneles
+  Prioridad: ALTA
+  Depende de: T8 (UI cadenas), T9 (UI evolucion)
+
+  UIManager.cs:
+    - Al inicio: ocultar botones de pilar, evolucion, prestige, codice
+    - Chequear en cada ActualizarHUD():
+        EV acumulados >= 5    -> mostrar boton Atmosfera
+        EV acumulados >= 50   -> mostrar boton Tierra
+        EV acumulados >= 200  -> mostrar boton Oceanos
+        EV acumulados >= 1000 -> mostrar boton Vida
+        EraActual >= 2        -> mostrar boton Evolucion
+        EraActual >= 3        -> mostrar boton Prestige
+        PrimerPrestigeHecho   -> mostrar boton Codice
+    - Notificacion al desbloquear: publicar EventoUIDesbloqueado
+    - Mostrar breve texto: "Nuevo: Oceanos!" durante 3 segundos
+
+  EstadoJuego.cs:
+    - Campo EVMaximoAlcanzado (double) para trackear maximo historico
+    - No resetear con prestige (para que los desbloqueos sean permanentes)
+
+  SistemaGuardado.cs:
+    - Guardar EVMaximoAlcanzado
+
+
+================================================================================
+ BLOQUE 6: MEJORAS AL PRESTIGE
+================================================================================
+
+TAREA 14 - Preview de prestige mejorado
+  Prioridad: ALTA
+  Depende de: Nada nuevo
+
+  CalculadorProduccion.cs:
+    - Mejorar EstimarGananciaPrestige: usar EV actual real (no tiempo*evps)
+    - Nuevo metodo ProyectarGananciaEnTiempo(tipo, minutos):
+      proyecta cuanto ganarias si esperas X minutos mas
+
+  UIManager.cs (seccion prestige):
+    - Mostrar: "Ahora: +12 Fosiles (x2.2 total)"
+    - Mostrar: "En 5 min: +15 Fosiles (x2.5 total)"
+    - Mostrar: "En 30 min: +22 Fosiles (x3.2 total)"
+
+
+================================================================================
+ BLOQUE 7: CODICE FOSIL (arbol de gasto de prestige)
+================================================================================
+
+TAREA 15 - Catalogo del Codice Fosil
+  Prioridad: ALTA
+  Depende de: T1
+
+  Crear CatalogoCodice.cs en idlesystem/data/Catalogos/:
+    ~25 nodos en 3 ramas:
+
+    ABUNDANCIA (produccion):
+      - Raices Profundas: +15% EV/s por nivel (max 5, coste 3/6/12/24/48 fosiles)
+      - Fertilidad: +25% produccion pilares Tierra+Vida por nivel (max 3)
+      - Erupcion Perpetua: +40% produccion nocturna por nivel (max 3)
+      - Cascada Vital: x2 milestone bonus por nivel (max 2)
+      - Gaia Menor: +10% todas las sinergias por nivel (max 5)
+
+    EFICIENCIA (economia):
+      - Memoria Geologica: -10% costes mejoras por nivel (max 5)
+      - Tectonica Acelerada: -15% costes cadenas por nivel (max 3)
+      - Erosion Rapida: +20% velocidad de desbloqueo cadenas por nivel (max 3)
+      - Salto Evolutivo: empezar con +2 niveles en mejoras Era 1 por nivel (max 3)
+      - Eco del Pasado: empezar con +50 cap en todos los eslabones por nivel (max 5)
+
+    DOMINIO (activo/tap):
+      - Impacto Cosmico: +50% poder de tap por nivel (max 5)
+      - Combo Rapido: -1 tap para combo por nivel (max 2) [5->4->3 taps]
+      - Pulso Prolongado: +3s duracion combo por nivel (max 3) [10->13->16->19s]
+      - Auto-Tap: 1 tap automatico cada Xs por nivel (max 3) [5s->3s->1s]
+      - Resonancia: combo aplica x2.5 en vez de x2 por nivel (max 2) [x2->x2.5->x3]
+
+------------------------------------------------------------------------
+
+TAREA 16 - Sistema del Codice
+  Prioridad: ALTA
+  Depende de: T15
+
+  Crear SistemaCodice.cs en idlesystem/systems/:
+    - AsignarEstado: crear EstadoNodoCodice para cada definicion
+    - ComprarNodo(id): gastar fosiles, incrementar nivel, publicar evento
+    - ComprobarDesbloqueos(): prerequisitos de nodos
+    - ObtenerBonusTotalRama(rama): para UI y para CalculadorProduccion
+    - Metodos para consultar bonuses especificos:
+      BonusProduccion(), BonusCoste(), BonusTap(), etc.
+
+  CalculadorProduccion.cs:
+    - Incorporar multiplicador del Codice en Calcular()
+    - Aplicar reduccion de costes donde corresponda
+
+  GameController.cs:
+    - Instanciar SistemaCodice, AsignarEstado
+    - API: ComprarNodoCodice(id)
+
+  SistemaPrestige.cs (Resetear):
+    - Parcial: NO resetear Codice Fosil
+    - Total (BigBang): SI resetear Codice Fosil
+
+  TapManager.cs:
+    - Consultar SistemaCodice para bonus de tap y combo
+    - Aplicar: multiplicador tap, reduccion taps para combo, duracion combo
+
+------------------------------------------------------------------------
+
+TAREA 17 - Guardar + UI del Codice
+  Prioridad: ALTA
+  Depende de: T16
+
+  SistemaGuardado.cs:
+    - Serializar nodos del Codice (id:nivel|)
+
+  UIManager.cs:
+    - Panel_Codice: arbol visual con 3 ramas
+    - Cada nodo: nombre, nivel, coste en fosiles, efecto
+    - Boton comprar (gasta fosiles, no EV)
+    - Mostrar fosiles disponibles en la parte superior
+    - Boton en pantalla principal (visible tras primer prestige)
+
+  Trabajo Unity: crear Panel_Codice, prefab de nodo
+
+
+================================================================================
+ BLOQUE 8: AUTO-COMPRA
+================================================================================
+
+TAREA 18 - Sistema de automatizacion
+  Prioridad: MEDIA
+  Depende de: T9 (UI evolucion, para ver nodos de auto-compra)
+
+  Crear SistemaAutomatizacion.cs en idlesystem/systems/:
+    - Lista de automatizaciones desbloqueables:
+      Gravedad (auto Tierra), Corrientes (auto Oceanos),
+      Viento (auto Atmosfera), Evolucion Natural (auto Vida),
+      Seleccion Natural (smart: mejor ratio prod/coste global)
+    - Cada una: desbloqueada (bool), activada (bool), intervalo (2s)
+    - Logica: cada intervalo, compra la mejora mas barata del pilar asignado
+    - Smart mode: compra la mejora con mejor incremento de EV/s por EV gastado
+
+  CatalogosResto.cs:
+    - Agregar 5 nodos de evolucion nuevos (nd_33 a nd_37) que desbloquean
+      cada automatizacion. Era 3-4, coste alto en EV.
+
+  GameController.cs:
+    - Instanciar, tick cada frame (pero la logica tiene su propio timer)
+
+------------------------------------------------------------------------
+
+TAREA 19 - Guardar + UI auto-compra
+  Prioridad: MEDIA
+  Depende de: T18
+
+  SistemaGuardado.cs:
+    - Serializar estado de automatizaciones (cuales desbloqueadas + activas)
+
+  UIManager.cs:
+    - Dentro de cada panel de pilar: toggle on/off para auto-compra
+    - Solo visible si el nodo de evolucion correspondiente esta comprado
+    - Indicador visual cuando auto-compra esta activa
+
+  Trabajo Unity: anadir toggle al panel de categoria
+
+
+================================================================================
+ BLOQUE 9: EVENTOS CON OPCIONES MULTIPLES
+================================================================================
+
+TAREA 20 - Extender sistema de eventos
+  Prioridad: MEDIA
+  Depende de: T1
+
+  Definiciones.cs:
+    - Nueva clase DefinicionOpcionEvento:
+      { string Texto, string Descripcion, double Multiplicador,
+        float Duracion, double CostePorcentajeEV }
+    - Anadir DefinicionOpcionEvento[] Opciones a DefinicionEvento
+
+  SistemaEventos.cs:
+    - AceptarOpcion(idEvento, indiceOpcion): aplica efecto de la opcion elegida
+    - Mantener compatibilidad: si Opciones es null, funciona como antes
+
+  CatalogosResto.cs:
+    - Reescribir los 15 eventos con 2-3 opciones cada uno
+    - Ejemplo "Lluvia de Meteoritos":
+      Opcion A: "Desviar" -> gasta 30% EV, sin dano
+      Opcion B: "Cosechar" -> -20% prod 60s, pero x3 EV burst 30s
+      Opcion C: "Ignorar" -> pierde 10% EV
+
+  UIManager.cs:
+    - Panel_Evento: mostrar 2-3 botones con texto de cada opcion
+    - Reemplazar Btn_Aceptar/Btn_Rechazar por botones dinamicos
+
+  Trabajo Unity: redisenar Panel_Evento para N botones
+
+
+================================================================================
+ BLOQUE 10: ESPECIALIZACION DE PILARES
+================================================================================
+
+TAREA 21 - Bonus secundario por pilar
+  Prioridad: MEDIA
+  Depende de: T6 (cadenas integradas en produccion)
+
+  CalculadorProduccion.cs:
+    - Calcular nivel total por pilar
+    - Aplicar bonus secundarios:
+      Atmosfera: +1% produccion offline/idle por nivel total
+      Oceanos: +1% poder de tap por nivel total
+      Tierra: -0.5% coste de mejoras por nivel total (cap -50%)
+      Vida: +1% efectividad de sinergias por nivel total
+
+  UIManager.cs:
+    - Mostrar bonus secundario en panel de cada pilar
+    - Ejemplo: "Bonus Tierra: -12% costes (nivel total: 24)"
+
+
+================================================================================
+ BLOQUE 11: DESAFIOS (Era 5)
+================================================================================
+
+TAREA 22 - Catalogo de desafios
+  Prioridad: MEDIA
+  Depende de: T1
+
+  Crear CatalogoDesafios.cs en idlesystem/data/Catalogos/:
+    ~8-10 desafios usando DefinicionDesafio existente:
+
+    1. "Planeta Seco" - Sin mejoras Oceanos, llegar a Era 3 -> +25% Oceanos permanente
+    2. "Sin Tectonica" - Cadenas desactivadas, llegar a Era 2 -> -10% costes cadena
+    3. "Sprint" - Timer 30 min, llegar a era mas alta -> +2% por era alcanzada
+    4. "Minimalista" - Max 20 compras totales, llegar a Era 3 -> x1.5 produccion mejoras
+    5. "Desequilibrio" - Solo 2 pilares, llegar a Era 4 -> +30% sinergias
+    6. "Sin Prestige" - No puedes hacer Extincion, llegar a Era 5 -> +50% fosiles
+    7. "Velocidad" - Llegar a Era 3 en 10 min -> +20% produccion permanente
+    8. "Austeridad" - Solo Zone 0 mejoras, llegar a Era 3 -> +40% Zone 0 produccion
+
+------------------------------------------------------------------------
+
+TAREA 23 - Sistema de desafios
+  Prioridad: MEDIA
+  Depende de: T22
+
+  Crear SistemaDesafios.cs en idlesystem/systems/:
+    - IniciarDesafio(id): marca desafio activo, aplica restricciones al estado
+    - ComprobarVictoria(): cada tick, chequea condicion con EstadoSnapshot
+    - CompletarDesafio(): da recompensa permanente (multiplicador en estado),
+      publica EventoDesafioCompletado, termina run
+    - AbandonarDesafio(): cancela sin recompensa
+    - Restricciones se aplican via flags en EstadoJuego que los otros
+      sistemas consultan (ej: SistemaMejoras chequea si pilar esta bloqueado)
+
+  GameController.cs:
+    - Instanciar, API publica: IniciarDesafio(id), AbandonarDesafio()
+
+------------------------------------------------------------------------
+
+TAREA 24 - Guardar + UI desafios
+  Prioridad: MEDIA
+  Depende de: T23
+
+  SistemaGuardado.cs:
+    - Serializar desafios completados + desafio activo
+
+  UIManager.cs:
+    - Panel_Desafios: lista de challenges con estado (bloqueado/disponible/completado)
+    - Cada uno muestra: restriccion, objetivo, recompensa
+    - Boton iniciar
+    - Visible desde Era 5
+
+  Trabajo Unity: crear Panel_Desafios
+
+
+================================================================================
+ BLOQUE 12: CODICE GENETICO (Era 6)
+================================================================================
+
+TAREA 25 - Codice Genetico
+  Prioridad: BAJA
+  Depende de: T16 (SistemaCodice base)
+
+  Crear CatalogoCodicoGenetico.cs:
+    ~20 nodos en 3 ramas:
+    ADAPTACION: bonuses a cadenas (cap, costes, velocidad desbloqueo)
+    MUTACION: bonuses a sinergias y eventos (efectividad, frecuencia, opciones extra)
+    SIMBIOSIS: bonuses a combinaciones de pilares (bonus cuando 2+ pilares balanceados)
+
+  Extender SistemaCodice.cs:
+    - Soporte para segundo arbol que usa Genes en vez de Fosiles
+    - Mismo patron de compra/bonus/persistencia
+    - Persiste entre Extincion/Glaciacion, se resetea con Big Bang
+
+  SistemaGuardado.cs:
+    - Serializar nodos del Codice Genetico
+
+  UIManager.cs:
+    - Panel_CodicoGenetico (similar al Panel_Codice pero con Genes)
+    - Visible desde Era 6
+
+  Trabajo Unity: crear panel
+
+
+================================================================================
+ BLOQUE 13: BIFURCACIONES EVOLUTIVAS (Era 6)
+================================================================================
+
+TAREA 26 - Sistema de bifurcaciones
+  Prioridad: BAJA
+  Depende de: T6 (cadenas), T7 (guardar cadenas)
+
+  Definiciones.cs:
+    - DefinicionBifurcacion: pilar, nombreA, nombreB,
+      multiplicadoresA (por eslabon), multiplicadoresB (por eslabon)
+
+  Crear SistemaBifurcaciones.cs:
+    - Al llegar a Era 6: ofrecer eleccion por pilar
+    - ElegirBifurcacion(pilar, opcion): guarda eleccion, aplica multiplicadores
+    - Multiplicadores afectan caps de cadenas del pilar
+    - Se reinician con prestige (cada run puede elegir diferente)
+    - 4 pilares x 2 opciones = 16 combinaciones posibles
+
+  Bifurcaciones:
+    Tierra: Volcanica (x2.5 Extraccion, x0.5 Erosion) vs
+            Estable (x2.5 Erosion, x0.5 Extraccion)
+    Oceanos: Abisal (x3 Corrientes, -30% Volumen) vs
+             Tropical (x3 Volumen, -30% Corrientes)
+    Atmosfera: Densa (x2.5 Densidad, -40% Circulacion) vs
+               Ligera (x2.5 Circulacion, -40% Densidad)
+    Vida: Depredadora (x3 Cadena Trofica, -50% Diversidad) vs
+          Cooperativa (x3 Diversidad, -50% Cadena Trofica)
+
+  SistemaCadenas.cs:
+    - Aplicar multiplicadores de bifurcacion al calcular caps
+
+  SistemaPrestige.cs:
+    - Resetear bifurcaciones en reset Parcial y Total
+
+  SistemaGuardado.cs:
+    - Serializar bifurcaciones elegidas
+
+  UIManager.cs:
+    - Popup de eleccion al llegar a Era 6 (4 dialogos, 2 opciones cada uno)
+    - Indicador en panel de pilar de la bifurcacion activa
+
+  Trabajo Unity: crear popup de bifurcacion
+
+
+================================================================================
+ BLOQUE 14: BALANCE Y TESTING
+================================================================================
+
+TAREA 27 - Balance pass completo
+  Prioridad: CRITICA (pero se hace al final)
+  Depende de: Todas las anteriores
+
+  Verificar:
+    [ ] Primera compra posible en <10 segundos
+    [ ] Era 2 alcanzable en ~5 minutos
+    [ ] Primer cuello de botella de Tierra notable en Era 1
+    [ ] Era 3 alcanzable en ~20 minutos
+    [ ] Primer prestige en ~30-40 minutos
+    [ ] Segundo run con fosiles notablemente mas rapido
+    [ ] Cadenas de cuello rotan correctamente (no siempre el mismo eslabon)
+    [ ] Misiones se completan a ritmo constante (1 cada 2-5 min)
+    [ ] No hay dead zones >10 segundos sin nada que comprar
+    [ ] Save/Load funciona para TODOS los sistemas nuevos
+    [ ] Prestige resetea correctamente cadenas, misiones, bifurcaciones
+    [ ] Big Bang resetea Codice Fosil + Genetico
+    [ ] Tap con bonus de Codice funciona correctamente
+    [ ] Auto-compra compra inteligentemente
+
+  Ajustar numeros segun sea necesario en:
+    - CatalogoMejoras.cs (costes, produccion)
+    - CatalogoCadenas.cs (caps, costes)
+    - CatalogoMisiones.cs (objetivos, recompensas)
+    - CatalogoCodice.cs (costes en fosiles, valores de bonus)
+    - CatalogosResto.cs (requisitos de eras, sinergias)
+
+
+================================================================================
+ DIAGRAMA DE DEPENDENCIAS
+================================================================================
+
+  T1 (Datos) ----+---- T2 (Balance)         T9 (UI Evolucion) [sin deps]
+                 |
+                 +---- T3 (Tap ajuste)       T14 (Preview prestige) [sin deps]
+                 |
+                 +---- T4 -> T5 -> T6 -> T7 -> T8 (Cadenas completas)
+                 |                  |
+                 |                  +---- T21 (Especializacion pilares)
+                 |                  +---- T26 (Bifurcaciones) [+ T7]
+                 |
+                 +---- T10 -> T11 -> T12 (Misiones completas)
+                 |
+                 +---- T15 -> T16 -> T17 (Codice Fosil completo)
+                 |              |
+                 |              +---- T25 (Codice Genetico)
+                 |
+                 +---- T20 (Eventos mejorados)
+                 |
+                 +---- T22 -> T23 -> T24 (Desafios completos)
+
+  T8 + T9 -----> T13 (Revelacion progresiva)
+  T9 ----------> T18 -> T19 (Auto-compra)
+
+  TODO ---------> T27 (Balance pass)
+
+
+================================================================================
+ PRIORIDADES RESUMEN
+================================================================================
+
+  CRITICAS (alpha jugable):
+    T1, T2, T3, T4, T5, T6, T7, T8, T9
+
+  ALTAS (alpha con profundidad):
+    T10, T11, T12, T13, T14, T15, T16, T17
+
+  MEDIAS (alpha completo):
+    T18, T19, T20, T21, T22, T23, T24
+
+  BAJAS (contenido era 6+):
+    T25, T26
+
+  FINAL:
+    T27 (balance)
+
+  Total: 27 tareas, ~15 archivos nuevos, ~10 archivos modificados
