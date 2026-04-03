@@ -1,0 +1,162 @@
+using System;
+using System.Collections.Generic;
+using Terra.Core;
+using Terra.State;
+using UnityEngine;
+
+namespace Terra.Systems
+{
+    /// <summary>
+    /// Gestiona guardado y carga. Serializa EstadoJuego a PlayerPrefs con JSON.
+    /// En producción se puede cambiar el backend (archivo, nube) sin tocar el resto.
+    /// </summary>
+    public class SistemaGuardado
+    {
+        private const string KEY_GUARDADO = "terra_save_v1";
+        private const float INTERVALO_AUTOSAVE = 30f;
+
+        private float _timerAutoguardado;
+
+        [Serializable]
+        private class DatosSerializables
+        {
+            public double energiaVital;
+            public int eraActual;
+            public double tiempoJugado;
+            public double fosiles, genes, quarks;
+            public int vecesExtincion, vecesGlaciacion, vecesBigBang;
+            public int diasRacha;
+            public string ultimaConexion;
+
+            // Mejoras: id:nivel separados por |
+            public string mejoras;
+            // Nodos: id:nivel separados por |
+            public string nodos;
+            // Logros completados: ids separados por |
+            public string logros;
+        }
+
+        public void Guardar(EstadoJuego estado)
+        {
+            var datos = new DatosSerializables
+            {
+                energiaVital     = estado.EnergiaVital,
+                eraActual        = estado.EraActual,
+                tiempoJugado     = estado.TiempoJugadoTotal,
+                fosiles          = estado.Prestige.Fosiles,
+                genes            = estado.Prestige.Genes,
+                quarks           = estado.Prestige.Quarks,
+                vecesExtincion   = estado.Prestige.VecesExtincion,
+                vecesGlaciacion  = estado.Prestige.VecesGlaciacion,
+                vecesBigBang     = estado.Prestige.VecesBigBang,
+                diasRacha        = estado.Racha.DiasConsecutivos,
+                ultimaConexion   = estado.Racha.UltimaConexion.ToBinary().ToString(),
+            };
+
+            // Serializar mejoras
+            var partesMejoras = new System.Text.StringBuilder();
+            foreach (var kv in estado.Mejoras)
+                if (kv.Value.Nivel > 0)
+                    partesMejoras.Append($"{kv.Key}:{kv.Value.Nivel}|");
+            datos.mejoras = partesMejoras.ToString();
+
+            // Serializar nodos
+            var partesNodos = new System.Text.StringBuilder();
+            foreach (var kv in estado.Nodos)
+                if (kv.Value.Nivel > 0)
+                    partesNodos.Append($"{kv.Key}:{kv.Value.Nivel}|");
+            datos.nodos = partesNodos.ToString();
+
+            // Serializar logros
+            var partesLogros = new System.Text.StringBuilder();
+            foreach (var kv in estado.Logros)
+                if (kv.Value.Completado)
+                    partesLogros.Append($"{kv.Key}|");
+            datos.logros = partesLogros.ToString();
+
+            string json = JsonUtility.ToJson(datos);
+            PlayerPrefs.SetString(KEY_GUARDADO, json);
+            PlayerPrefs.Save();
+        }
+
+        public bool Cargar(EstadoJuego estado)
+        {
+            string json = PlayerPrefs.GetString(KEY_GUARDADO, "");
+            if (string.IsNullOrEmpty(json)) return false;
+
+            try
+            {
+                var datos = JsonUtility.FromJson<DatosSerializables>(json);
+
+                estado.EnergiaVital          = datos.energiaVital;
+                estado.EraActual             = Mathf.Clamp(datos.eraActual, 1, 8);
+                estado.TiempoJugadoTotal     = datos.tiempoJugado;
+                estado.Prestige.Fosiles      = datos.fosiles;
+                estado.Prestige.Genes        = datos.genes;
+                estado.Prestige.Quarks       = datos.quarks;
+                estado.Prestige.VecesExtincion  = datos.vecesExtincion;
+                estado.Prestige.VecesGlaciacion = datos.vecesGlaciacion;
+                estado.Prestige.VecesBigBang    = datos.vecesBigBang;
+                estado.Racha.DiasConsecutivos   = datos.diasRacha;
+
+                if (long.TryParse(datos.ultimaConexion, out long bin))
+                    estado.Racha.UltimaConexion = DateTime.FromBinary(bin);
+
+                // Cargar mejoras
+                if (!string.IsNullOrEmpty(datos.mejoras))
+                    foreach (var parte in datos.mejoras.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(parte)) continue;
+                        var kv = parte.Split(':');
+                        if (kv.Length != 2) continue;
+                        string id = kv[0];
+                        if (int.TryParse(kv[1], out int nivel) && estado.Mejoras.ContainsKey(id))
+                            estado.Mejoras[id].Nivel = nivel;
+                    }
+
+                // Cargar nodos
+                if (!string.IsNullOrEmpty(datos.nodos))
+                    foreach (var parte in datos.nodos.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(parte)) continue;
+                        var kv = parte.Split(':');
+                        if (kv.Length != 2) continue;
+                        string id = kv[0];
+                        if (int.TryParse(kv[1], out int nivel) && estado.Nodos.ContainsKey(id))
+                            estado.Nodos[id].Nivel = nivel;
+                    }
+
+                // Cargar logros
+                if (!string.IsNullOrEmpty(datos.logros))
+                    foreach (var id in datos.logros.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(id)) continue;
+                        if (estado.Logros.ContainsKey(id))
+                        {
+                            estado.Logros[id].Completado = true;
+                            estado.Logros[id].FechaCompletado = DateTime.UtcNow;
+                        }
+                    }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[TERRA] Error al cargar partida: {e.Message}");
+                return false;
+            }
+        }
+
+        public void BorrarGuardado() => PlayerPrefs.DeleteKey(KEY_GUARDADO);
+
+        public void Tick(float delta, EstadoJuego estado)
+        {
+            _timerAutoguardado -= delta;
+            if (_timerAutoguardado <= 0)
+            {
+                Guardar(estado);
+                _timerAutoguardado = INTERVALO_AUTOSAVE;
+            }
+        }
+    }
+}

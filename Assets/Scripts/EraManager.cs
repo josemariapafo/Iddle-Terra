@@ -36,6 +36,23 @@ public class EraManager : MonoBehaviour
         AplicarEraDesdeTransicion(_eraActual);
     }
 
+    /// <summary>
+    /// Llamado desde UIManager al pulsar "Continuar Evolucionando".
+    /// Aplica la textura y la transicion visual de la era.
+    /// </summary>
+    public void AplicarEraVisual(int numeroEra)
+    {
+        int index = Mathf.Clamp(numeroEra - 1, 0, eras.Length - 1);
+        _eraActual = index;
+
+        Debug.Log($"[EraManager] AplicarEraVisual llamado. Era={numeroEra} index={index} transicion={transicion != null}");
+
+        if (transicion != null && Application.isPlaying)
+            transicion.Reproducir(index);
+        else
+            AplicarEraDesdeTransicion(index);
+    }
+
     public void AvanzarEra()
     {
         if (_eraActual >= eras.Length - 1)
