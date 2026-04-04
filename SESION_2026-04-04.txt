@@ -1,0 +1,125 @@
+================================================================================
+ SESION 2026-04-04 — Resumen de trabajo
+================================================================================
+
+TAREAS COMPLETADAS HOY:
+-----------------------
+
+T1: Extender modelo de datos base [COMPLETADA - sesion anterior]
+  - Interfaces.cs: 4 enums nuevos (TipoEslabon, TipoMision, TipoRecompensa, TipoCodice)
+  - Definiciones.cs: 3 clases (DefinicionSubMejoraCadena, DefinicionMision, DefinicionNodoCodice)
+  - EstadoJuego.cs: 3 clases estado + campos nuevos (Cadenas, Misiones, Codice, Bifurcaciones, UI)
+  - EventBus.cs: 6 eventos nuevos
+
+T2: Ajuste de balance early game [COMPLETADA]
+  - CalculadorProduccion.cs: PRODUCCION_BASE_MINIMA 0.5 -> 1.0
+  - CatalogoMejoras.cs: costes Era 1 reducidos ~40% (atm_01:5, oc_01:6, ti_01:6, vi_01:5)
+  - CatalogoMejoras.cs: MultiplicadorCoste 1.12 -> 1.10 en todas las mejoras Eras 1-2
+  - CatalogosResto.cs: Era 2 (nivel 5->4, EV 5000->2000), Era 3 (nivel 12->10, EV 80000->40000)
+
+T3: Ajustar TapManager + EventBus [COMPLETADA]
+  - TapManager.cs: segundosPorTap 0.5->5, tapsParaCombo 10->5, tiempoResetCombo 1.5->3, duracionCombo 3->10
+  - Publicar EventoComboActivado al activar combo
+
+T4: Catalogo de cadenas [COMPLETADA]
+  - CatalogoCadenas.cs: 48 sub-mejoras (4 pilares x 3 eslabones x 4 tiers)
+  - Tierra(Era1), Oceanos(Era2), Atmosfera(Era3), Vida(Era4)
+
+T5: Sistema de cadenas [COMPLETADA]
+  - SistemaCadenas.cs: ISistema + AsignarEstado
+  - ComprarNivel, ComprarMax, ComprobarDesbloqueos
+  - CalcularCapEslabon (con NIVELES_BASE_GRATIS=2), CalcularCapPilar (min de 3 eslabones)
+  - IdentificarCuelloBotella, CadenaPilarDesbloqueada
+  - ObtenerSubMejorasPorEslabon, NivelAcumuladoEslabon
+
+T6: Integrar cadenas en produccion [COMPLETADA]
+  - CalculadorProduccion.cs: campo _cadenas + AsignarCadenas()
+  - CalcularBaseProduccion: cap per-pilar con min(produccion, capCadena)
+  - Nuevo CalcularDesglosePorPilar (Potencial, CapCadena, Efectivo)
+  - CalcularProduccionPorPilar retrocompatible
+  - GameController.cs: instanciar SistemaCadenas, AsignarCadenas, API publica
+
+T7: Guardar cadenas + reset prestige [COMPLETADA]
+  - SistemaGuardado.cs: campo "cadenas" en DatosSerializables, serializar/deserializar
+  - SistemaPrestige.cs: Resetear() incluye cadenas en Parcial y Total
+
+T8: UI de cadenas [COMPLETADA]
+  - UIManager.cs: pestanas Produccion/Infraestructura en Panel_Categoria
+  - Tarjetas de sub-mejoras comprables reusando Prefab_TarjetaMejora
+  - Widget resumen cadenas en HUD (Text_ResumenCadenas)
+  - Indicador de cuello de botella en rojo con "LIMITA" por eslabon
+  - Texto superior: "Produce X/s -> Cap Y/s [Mejora Procesamiento]"
+
+T9: Panel de evolucion [COMPLETADA]
+  - UIManager.cs: Panel_Evolucion con 32 nodos agrupados por era
+  - Prefab_NodoArbol: boton con colores gris/dorado/verde
+  - Popup con detalles: nombre, desc, efecto actual->siguiente, coste
+  - Boton comprar en popup
+  - SistemasSecundarios.cs: SistemaArbol.BuscarDefinicion(id) nuevo
+
+T10: Catalogo de misiones [COMPLETADA]
+  - CatalogoMisiones.cs: 30 misiones en 7 cadenas progresivas
+  - Tipos: Compra(7), Produccion(6), Sinergia(3), Era(3), Prestige(3), Combo(3), CuelloBotella(3)
+  - Recompensas: EVInstante, MultiplicadorTemporal, FosilesExtra, NivelNodoGratis
+
+T11: Sistema de misiones [COMPLETADA]
+  - SistemaMisiones.cs: 3 slots activos, pool filtrado por era+progresivas
+  - Suscripcion EventBus: compras, combos, cadenas -> incrementan contadores
+  - Evaluacion periodica (5s): produccion, sinergias, era, prestige
+  - Completar: otorga recompensa, rota siguiente del pool
+  - GameController.cs: instanciar, AsignarEstado, tick en ActualizarSistemas
+
+
+BUGS ARREGLADOS HOY:
+--------------------
+- SistemaIdle.cs linea 125: warning CS0067 OnEraCompletada nunca usado -> eliminado
+- UIManager.cs: error CS0173 expresion condicional null/null -> eliminado codigo muerto
+- SistemaCadenas: cap=0 bloqueaba produccion -> NIVELES_BASE_GRATIS=2 como base
+- Cadenas no hacian bottleneck visible -> NIVELES_BASE_GRATIS bajado de 5 a 2
+- UI no mostraba cual eslabon limita -> indicador rojo "LIMITA" por eslabon
+
+
+SIGUIENTE TAREA:
+----------------
+T12: Guardar + UI misiones
+  - SistemaGuardado.cs: serializar misiones activas (id+progreso) y completadas
+  - UIManager.cs: widget en pantalla principal con 3 barras de progreso
+  - Notificacion al completar (banner temporal)
+  - Visible desde Era 2
+
+
+TAREAS RESTANTES (T12-T27):
+---------------------------
+T12: Guardar + UI misiones (ALTA)
+T13: Revelacion progresiva UI (ALTA)
+T14: Mejora preview prestige (ALTA)
+T15-T17: Codice Fosil (catalogo, sistema, UI) (ALTA)
+T18-T19: Auto-compra (MEDIA)
+T20: Eventos multiples opciones (MEDIA)
+T21: Especializacion pilares (MEDIA)
+T22-T24: Desafios Era 5 (MEDIA)
+T25: Codice Genetico Era 6 (BAJA)
+T26: Bifurcaciones Era 6 (BAJA)
+T27: Balance pass final (FINAL)
+
+
+ARCHIVOS MODIFICADOS/CREADOS HOY:
+----------------------------------
+MODIFICADOS:
+  - Assets/Scripts/idlesystem/systems/CalculadorProduccion.cs
+  - Assets/Scripts/idlesystem/data/Catalogos/CatalogoMejoras.cs
+  - Assets/Scripts/idlesystem/data/Catalogos/CatalogosResto.cs
+  - Assets/Scripts/TapManager.cs
+  - Assets/Scripts/idlesystem/systems/SistemaCadenas.cs
+  - Assets/Scripts/idlesystem/controllers/GameController.cs
+  - Assets/Scripts/idlesystem/systems/SistemaGuardado.cs
+  - Assets/Scripts/idlesystem/systems/SistemasSinergiaPrestige.cs
+  - Assets/Scripts/idlesystem/systems/SistemasSecundarios.cs
+  - Assets/Scripts/UIManager.cs
+  - Assets/Scripts/SistemaIdle.cs (warning fix)
+
+CREADOS:
+  - Assets/Scripts/idlesystem/data/Catalogos/CatalogoCadenas.cs
+  - Assets/Scripts/idlesystem/systems/SistemaCadenas.cs
+  - Assets/Scripts/idlesystem/data/Catalogos/CatalogoMisiones.cs
+  - Assets/Scripts/idlesystem/systems/SistemaMisiones.cs
