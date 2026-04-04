@@ -155,6 +155,9 @@ public class UIManager : MonoBehaviour
     private float _timerBannerMision = 0f;
     private const float DURACION_BANNER_MISION = 3f;
 
+    // ── Revelación progresiva ─────────────────────────────────────────
+    private int _eraMaxVisualAnterior;
+
     // ── Misiones: UI dinámica ─────────────────────────────────────────
     private bool _misionesTabCompletadas = false;
     private Transform _contenedorMisionesActivas;
@@ -188,6 +191,7 @@ public class UIManager : MonoBehaviour
         ConfigurarBotones();
         SuscribirEventos();
         InicializarPanelMisiones();
+        InicializarRevelacionProgresiva();
         MostrarPantalla(Panel_Principal);
         ComprobarBonusDiario();
     }
@@ -332,19 +336,88 @@ public class UIManager : MonoBehaviour
         if (Indicador_Estancamiento != null)
             Indicador_Estancamiento.SetActive(gc.Estancamiento.EstaEstancado());
 
-        // Deshabilitar pilares sin infraestructura activa
-        if (Btn_Atmosfera != null) Btn_Atmosfera.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Atmosfera);
-        if (Btn_Oceanos != null) Btn_Oceanos.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Oceanos);
-        if (Btn_Tierra != null) Btn_Tierra.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Tierra);
-        if (Btn_Vida != null) Btn_Vida.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Vida);
-
-        // Botón misiones visible desde Era 2
-        if (Btn_AbrirMisiones != null)
-            Btn_AbrirMisiones.gameObject.SetActive(estado.EraActual >= 2);
+        // ── Revelación progresiva de botones ──
+        ActualizarRevelacionProgresiva(gc, estado);
 
         ActualizarResumenCadenas();
         ActualizarMetaProxima();
         ActualizarBannerMision();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // REVELACIÓN PROGRESIVA
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Al arrancar, oculta todo lo que el jugador aún no ha descubierto.
+    /// Usa EraMaximaAlcanzada (permanente, sobrevive prestige).
+    /// </summary>
+    void InicializarRevelacionProgresiva()
+    {
+        var gc = GameController.Instance;
+        int eraMax = gc != null ? gc.Estado.EraMaximaAlcanzada : 1;
+        _eraMaxVisualAnterior = eraMax;
+
+        // Pilares: Tierra(1), Oceanos(2), Atmosfera(3), Vida(4)
+        SetVisible(Btn_Tierra, true);                // siempre visible
+        SetVisible(Btn_Oceanos, eraMax >= 2);
+        SetVisible(Btn_Atmosfera, eraMax >= 3);
+        SetVisible(Btn_Vida, eraMax >= 4);
+
+        // Funcionalidades
+        SetVisible(Btn_AbrirEvolucion, eraMax >= 2);
+        SetVisible(Btn_AbrirMisiones, eraMax >= 2);
+        SetVisible(Btn_AbrirPrestige, eraMax >= 3);
+    }
+
+    void ActualizarRevelacionProgresiva(GameController gc, EstadoJuego estado)
+    {
+        int eraMax = estado.EraMaximaAlcanzada;
+
+        // Solo comprobar si la era máxima subió desde el último check
+        if (eraMax > _eraMaxVisualAnterior)
+        {
+            // Desbloquear lo nuevo de esta era
+            if (eraMax >= 2 && _eraMaxVisualAnterior < 2)
+            {
+                Revelar(Btn_Oceanos, "Oceanos");
+                Revelar(Btn_AbrirEvolucion, "Evolucion");
+                Revelar(Btn_AbrirMisiones, "Misiones");
+            }
+            if (eraMax >= 3 && _eraMaxVisualAnterior < 3)
+            {
+                Revelar(Btn_Atmosfera, "Atmosfera");
+                Revelar(Btn_AbrirPrestige, "Prestige");
+            }
+            if (eraMax >= 4 && _eraMaxVisualAnterior < 4)
+            {
+                Revelar(Btn_Vida, "Vida");
+            }
+
+            _eraMaxVisualAnterior = eraMax;
+        }
+
+        // Interactividad de pilares visibles (gris si cadena no desbloqueada aún en esta run)
+        if (Btn_Tierra != null) Btn_Tierra.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Tierra);
+        if (Btn_Oceanos != null && Btn_Oceanos.gameObject.activeSelf)
+            Btn_Oceanos.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Oceanos);
+        if (Btn_Atmosfera != null && Btn_Atmosfera.gameObject.activeSelf)
+            Btn_Atmosfera.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Atmosfera);
+        if (Btn_Vida != null && Btn_Vida.gameObject.activeSelf)
+            Btn_Vida.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Vida);
+    }
+
+    void Revelar(Button boton, string nombre)
+    {
+        if (boton == null || boton.gameObject.activeSelf) return;
+        boton.gameObject.SetActive(true);
+        EventBus.Publicar(new EventoUIDesbloqueado(nombre));
+        MostrarBannerMision("Nuevo: " + nombre + "!");
+    }
+
+    void SetVisible(Button boton, bool visible)
+    {
+        if (boton != null) boton.gameObject.SetActive(visible);
     }
 
     // ══════════════════════════════════════════════════════════════════════

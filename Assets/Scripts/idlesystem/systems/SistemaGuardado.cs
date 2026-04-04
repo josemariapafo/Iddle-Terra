@@ -41,6 +41,9 @@ namespace Terra.Systems
             public string misionesActivas;
             // Misiones completadas: ids separados por |
             public string misionesCompletadas;
+            // Revelación progresiva
+            public double evMaximoAlcanzado;
+            public int eraMaximaAlcanzada;
         }
 
         public void Guardar(EstadoJuego estado)
@@ -104,6 +107,10 @@ namespace Terra.Systems
                 partesCompletadas.Append($"{mc.Id}:{(mc.RecompensaRecogida ? 1 : 0)}|");
             datos.misionesCompletadas = partesCompletadas.ToString();
 
+            // Revelación progresiva
+            datos.evMaximoAlcanzado = estado.EVMaximoAlcanzado;
+            datos.eraMaximaAlcanzada = estado.EraMaximaAlcanzada;
+
             string json = JsonUtility.ToJson(datos);
             PlayerPrefs.SetString(KEY_GUARDADO, json);
             PlayerPrefs.Save();
@@ -131,6 +138,10 @@ namespace Terra.Systems
 
                 if (long.TryParse(datos.ultimaConexion, out long bin))
                     estado.Racha.UltimaConexion = DateTime.FromBinary(bin);
+
+                // Revelación progresiva
+                estado.EVMaximoAlcanzado = datos.evMaximoAlcanzado;
+                estado.EraMaximaAlcanzada = System.Math.Max(datos.eraMaximaAlcanzada, 1);
 
                 // Cargar mejoras
                 if (!string.IsNullOrEmpty(datos.mejoras))

@@ -197,6 +197,12 @@ namespace Terra.Controllers
             Estado.EVGanadaEnSesion += ganancia;
             Estado.TiempoJugadoTotal += delta;
 
+            // Trackear máximos históricos (no se resetean con prestige)
+            if (Estado.EnergiaVital > Estado.EVMaximoAlcanzado)
+                Estado.EVMaximoAlcanzado = Estado.EnergiaVital;
+            if (Estado.EraActual > Estado.EraMaximaAlcanzada)
+                Estado.EraMaximaAlcanzada = Estado.EraActual;
+
             // Eventos de tiempo
             if (Estado.TiempoRestanteEvento > 0)
                 Estado.TiempoRestanteEvento -= delta;

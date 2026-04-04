@@ -231,11 +231,9 @@ namespace Terra.State
         public Dictionary<TipoPilar, int> Bifurcaciones
             = new Dictionary<TipoPilar, int>();
 
-        // UI - desbloqueos progresivos
+        // UI - desbloqueos progresivos (nunca se resetean con prestige)
         public double EVMaximoAlcanzado;
-        public bool EvolucionUIDesbloqueada;
-        public bool PrestigeUIDesbloqueado;
-        public bool CodiceUIDesbloqueado;
+        public int EraMaximaAlcanzada = 1;
 
         // Multiplicadores temporales (eventos)
         public double MultiplicadorEvento = 1.0;
