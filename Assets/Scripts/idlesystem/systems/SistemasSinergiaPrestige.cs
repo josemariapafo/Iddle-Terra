@@ -180,6 +180,9 @@ namespace Terra.Systems
         public double GananciaEstimada(TipoPrestige tipo) =>
             _calculador.EstimarGananciaPrestige(tipo, _estado);
 
+        public double GananciaProyectada(TipoPrestige tipo, float segundos) =>
+            _calculador.ProyectarGananciaPrestige(tipo, _estado, segundos);
+
         public void Realizar(TipoPrestige tipo)
         {
             if (!PuedeHacer(tipo)) return;

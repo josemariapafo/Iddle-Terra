@@ -65,6 +65,7 @@ public class UIManager : MonoBehaviour
 
     // ── Panel Prestige ────────────────────────────────────────────────────
     [Header("Panel Prestige")]
+    public Button Btn_AbrirPrestige;
     public TextMeshProUGUI Text_GananciaExtincion;
     public TextMeshProUGUI Text_GananciaGlaciacion;
     public TextMeshProUGUI Text_GananciaBigBang;
@@ -118,7 +119,6 @@ public class UIManager : MonoBehaviour
     // ── Indicador estancamiento ───────────────────────────────────────────
     [Header("Indicador estancamiento")]
     public GameObject Indicador_Estancamiento;
-    public Button Btn_AbrirPrestige;
 
     // ── Racha diaria ──────────────────────────────────────────────────────
     [Header("Racha diaria")]
@@ -1499,23 +1499,47 @@ public class UIManager : MonoBehaviour
                 + "  (x" + p.MultiplicadorQuarks.ToString("F2") + ")";
 
         ActualizarBotonPrestige(Btn_Extincion, Text_GananciaExtincion,
-            TipoPrestige.Extincion, "Extincion", "Fosiles", "Era 5+");
+            TipoPrestige.Extincion, "Extincion", "Fosiles", "Era 3+", p.Fosiles, 0.1);
         ActualizarBotonPrestige(Btn_Glaciacion, Text_GananciaGlaciacion,
-            TipoPrestige.Glaciacion, "Glaciacion", "Genes", "Era 7+");
+            TipoPrestige.Glaciacion, "Glaciacion", "Genes", "Era 5+", p.Genes, 0.05);
         ActualizarBotonPrestige(Btn_BigBang, Text_GananciaBigBang,
-            TipoPrestige.BigBang, "Big Bang", "Quarks", "Era 8");
+            TipoPrestige.BigBang, "Big Bang", "Quarks", "Era 7+", p.Quarks, 2.0);
     }
 
     void ActualizarBotonPrestige(Button btn, TextMeshProUGUI texto,
-        TipoPrestige tipo, string nombre, string moneda, string req)
+        TipoPrestige tipo, string nombre, string moneda, string req,
+        double recursoActual, double multPorUnidad)
     {
         var gc = GameController.Instance;
         bool puede = gc.Prestige.PuedeHacer(tipo);
         if (btn != null) btn.interactable = puede;
-        if (texto != null)
-            texto.text = puede
-                ? nombre + "\n+" + Formateador.Numero(gc.Prestige.GananciaEstimada(tipo)) + " " + moneda
-                : nombre + "\nRequiere " + req;
+
+        if (texto == null) return;
+
+        if (!puede)
+        {
+            texto.text = nombre + "\nRequiere " + req;
+            return;
+        }
+
+        double ahora = gc.Prestige.GananciaEstimada(tipo);
+        double en5m  = gc.Prestige.GananciaProyectada(tipo, 300f);
+        double en30m = gc.Prestige.GananciaProyectada(tipo, 1800f);
+
+        // Multiplicador actual → después de prestige
+        double multActual = 1.0 + recursoActual * multPorUnidad;
+        double multNuevo  = 1.0 + (recursoActual + ahora) * multPorUnidad;
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append(nombre);
+        sb.Append("\nAhora: +" + Formateador.Numero(ahora) + " " + moneda);
+        sb.Append("  (x" + multActual.ToString("F1") + " -> x" + multNuevo.ToString("F1") + ")");
+        if (en5m > ahora)
+            sb.Append("\nEn 5 min: +" + Formateador.Numero(en5m) + " " + moneda);
+        if (en30m > en5m)
+            sb.Append("\nEn 30 min: +" + Formateador.Numero(en30m) + " " + moneda);
+
+        texto.text = sb.ToString();
     }
 
     // ══════════════════════════════════════════════════════════════════════

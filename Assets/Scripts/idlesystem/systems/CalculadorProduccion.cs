@@ -170,17 +170,29 @@ namespace Terra.Systems
         }
 
         /// <summary>
-        /// Ganancia prestige estimada. Cálculo independiente para mostrar en UI.
+        /// Ganancia prestige basada en EV actual acumulada.
         /// </summary>
         public double EstimarGananciaPrestige(TipoPrestige tipo, EstadoJuego estado)
         {
-            double evAcumuladaEstimada = estado.TiempoJugadoTotal * estado.EVPorSegundo;
+            return CalcularGananciaPrestige(tipo, estado.EnergiaVital);
+        }
 
+        /// <summary>
+        /// Proyecta ganancia prestige si el jugador espera X segundos más.
+        /// </summary>
+        public double ProyectarGananciaPrestige(TipoPrestige tipo, EstadoJuego estado, float segundosExtra)
+        {
+            double evProyectada = estado.EnergiaVital + estado.EVPorSegundo * segundosExtra;
+            return CalcularGananciaPrestige(tipo, evProyectada);
+        }
+
+        private static double CalcularGananciaPrestige(TipoPrestige tipo, double ev)
+        {
             return tipo switch
             {
-                TipoPrestige.Extincion  => Math.Floor(Math.Sqrt(evAcumuladaEstimada / 1_000_000)),
-                TipoPrestige.Glaciacion => Math.Floor(Math.Sqrt(evAcumuladaEstimada / 1_000_000_000)),
-                TipoPrestige.BigBang    => Math.Floor(Math.Log10(Math.Max(1, evAcumuladaEstimada))),
+                TipoPrestige.Extincion  => Math.Floor(Math.Sqrt(ev / 1_000_000)),
+                TipoPrestige.Glaciacion => Math.Floor(Math.Sqrt(ev / 1_000_000_000)),
+                TipoPrestige.BigBang    => Math.Floor(Math.Log10(Math.Max(1, ev))),
                 _                       => 0
             };
         }
