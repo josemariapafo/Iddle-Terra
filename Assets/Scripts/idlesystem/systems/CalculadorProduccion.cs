@@ -188,10 +188,14 @@ namespace Terra.Systems
 
         private static double CalcularGananciaPrestige(TipoPrestige tipo, double ev)
         {
+            // Divisores alineados con la progresión:
+            //   Extincion (Era 3+, ~40K-800K EV): 40K→2, 200K→4, 800K→8
+            //   Glaciacion (Era 5+, ~8M-800M EV): 8M→2, 80M→8, 800M→28
+            //   BigBang (Era 7+): log10 escala bien sin cambios
             return tipo switch
             {
-                TipoPrestige.Extincion  => Math.Floor(Math.Sqrt(ev / 1_000_000)),
-                TipoPrestige.Glaciacion => Math.Floor(Math.Sqrt(ev / 1_000_000_000)),
+                TipoPrestige.Extincion  => Math.Floor(Math.Sqrt(ev / 10_000)),
+                TipoPrestige.Glaciacion => Math.Floor(Math.Sqrt(ev / 1_000_000)),
                 TipoPrestige.BigBang    => Math.Floor(Math.Log10(Math.Max(1, ev))),
                 _                       => 0
             };

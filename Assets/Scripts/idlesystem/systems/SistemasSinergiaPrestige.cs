@@ -187,30 +187,53 @@ namespace Terra.Systems
         {
             if (!PuedeHacer(tipo)) return;
 
-            double ganancia = GananciaEstimada(tipo);
+            double ganancia = GananciaEfectiva(tipo);
+            if (ganancia <= 0) return;
 
             switch (tipo)
             {
                 case TipoPrestige.Extincion:
-                    _estado.Prestige.Fosiles += ganancia;
+                    _estado.Prestige.Fosiles = System.Math.Min(
+                        _estado.Prestige.Fosiles + ganancia,
+                        EstadoPrestige.CapFosiles);
                     _estado.Prestige.VecesExtincion++;
                     Resetear(TipoReset.Parcial);
                     break;
 
                 case TipoPrestige.Glaciacion:
-                    _estado.Prestige.Genes += ganancia;
+                    _estado.Prestige.Genes = System.Math.Min(
+                        _estado.Prestige.Genes + ganancia,
+                        EstadoPrestige.CapGenes);
                     _estado.Prestige.VecesGlaciacion++;
                     Resetear(TipoReset.Parcial);
                     break;
 
                 case TipoPrestige.BigBang:
-                    _estado.Prestige.Quarks += ganancia;
+                    _estado.Prestige.Quarks = System.Math.Min(
+                        _estado.Prestige.Quarks + ganancia,
+                        EstadoPrestige.CapQuarks);
                     _estado.Prestige.VecesBigBang++;
                     Resetear(TipoReset.Total);
                     break;
             }
 
             EventBus.Publicar(new EventoPrestigeRealizado(tipo, ganancia));
+        }
+
+        /// <summary>
+        /// Ganancia real teniendo en cuenta el cap restante.
+        /// </summary>
+        public double GananciaEfectiva(TipoPrestige tipo)
+        {
+            double formula = GananciaEstimada(tipo);
+            double restante = tipo switch
+            {
+                TipoPrestige.Extincion  => EstadoPrestige.CapFosiles - _estado.Prestige.Fosiles,
+                TipoPrestige.Glaciacion => EstadoPrestige.CapGenes   - _estado.Prestige.Genes,
+                TipoPrestige.BigBang    => EstadoPrestige.CapQuarks  - _estado.Prestige.Quarks,
+                _ => 0
+            };
+            return System.Math.Max(0, System.Math.Min(formula, restante));
         }
 
         public void Resetear(TipoReset tipo)

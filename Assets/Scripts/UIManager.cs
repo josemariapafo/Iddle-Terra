@@ -274,6 +274,7 @@ public class UIManager : MonoBehaviour
         EventBus.Suscribir<EventoLogroDesbloqueado>(OnLogroDesbloqueado);
         EventBus.Suscribir<EventoMejoraDesbloqueada>(OnMejoraDesbloqueada);
         EventBus.Suscribir<EventoMisionCompletada>(OnMisionCompletada);
+        EventBus.Suscribir<EventoPrestigeRealizado>(OnPrestigeRealizado);
     }
 
     void DesuscribirEventos()
@@ -285,6 +286,7 @@ public class UIManager : MonoBehaviour
         EventBus.Desuscribir<EventoLogroDesbloqueado>(OnLogroDesbloqueado);
         EventBus.Desuscribir<EventoMejoraDesbloqueada>(OnMejoraDesbloqueada);
         EventBus.Desuscribir<EventoMisionCompletada>(OnMisionCompletada);
+        EventBus.Desuscribir<EventoPrestigeRealizado>(OnPrestigeRealizado);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1490,41 +1492,69 @@ public class UIManager : MonoBehaviour
 
         if (Text_FosilesActuales != null)
             Text_FosilesActuales.text = "Fosiles: " + Formateador.Numero(p.Fosiles)
+                + "/" + Formateador.Numero(EstadoPrestige.CapFosiles)
                 + "  (x" + p.MultiplicadorFosiles.ToString("F2") + ")";
         if (Text_GenesActuales != null)
             Text_GenesActuales.text = "Genes: " + Formateador.Numero(p.Genes)
+                + "/" + Formateador.Numero(EstadoPrestige.CapGenes)
                 + "  (x" + p.MultiplicadorGenes.ToString("F2") + ")";
         if (Text_QuarksActuales != null)
             Text_QuarksActuales.text = "Quarks: " + Formateador.Numero(p.Quarks)
+                + "/" + Formateador.Numero(EstadoPrestige.CapQuarks)
                 + "  (x" + p.MultiplicadorQuarks.ToString("F2") + ")";
 
         ActualizarBotonPrestige(Btn_Extincion, Text_GananciaExtincion,
-            TipoPrestige.Extincion, "Extincion", "Fosiles", "Era 3+", p.Fosiles, 0.1);
+            TipoPrestige.Extincion, "Extincion", "Fosiles", "Era 3+",
+            p.Fosiles, 0.1, p.FosilesAlMax);
         ActualizarBotonPrestige(Btn_Glaciacion, Text_GananciaGlaciacion,
-            TipoPrestige.Glaciacion, "Glaciacion", "Genes", "Era 5+", p.Genes, 0.05);
+            TipoPrestige.Glaciacion, "Glaciacion", "Genes", "Era 5+",
+            p.Genes, 0.05, p.GenesAlMax);
         ActualizarBotonPrestige(Btn_BigBang, Text_GananciaBigBang,
-            TipoPrestige.BigBang, "Big Bang", "Quarks", "Era 7+", p.Quarks, 2.0);
+            TipoPrestige.BigBang, "Big Bang", "Quarks", "Era 7+",
+            p.Quarks, 2.0, p.QuarksAlMax);
     }
 
     void ActualizarBotonPrestige(Button btn, TextMeshProUGUI texto,
         TipoPrestige tipo, string nombre, string moneda, string req,
-        double recursoActual, double multPorUnidad)
+        double recursoActual, double multPorUnidad, bool alMax)
     {
         var gc = GameController.Instance;
         bool puede = gc.Prestige.PuedeHacer(tipo);
-        if (btn != null) btn.interactable = puede;
 
         if (texto == null) return;
 
         if (!puede)
         {
+            if (btn != null) btn.interactable = false;
             texto.text = nombre + "\nRequiere " + req;
             return;
         }
 
-        double ahora = gc.Prestige.GananciaEstimada(tipo);
+        if (alMax)
+        {
+            if (btn != null) btn.interactable = false;
+            texto.text = nombre + "\n<color=#FFD700>" + moneda + " AL MAXIMO</color>"
+                + "\nx" + (1.0 + recursoActual * multPorUnidad).ToString("F1");
+            return;
+        }
+
+        // Ganancia efectiva (respeta el cap restante)
+        double ahora = gc.Prestige.GananciaEfectiva(tipo);
+        if (btn != null) btn.interactable = ahora > 0;
+
         double en5m  = gc.Prestige.GananciaProyectada(tipo, 300f);
         double en30m = gc.Prestige.GananciaProyectada(tipo, 1800f);
+
+        // Clampear proyecciones al cap restante
+        double restante = tipo switch
+        {
+            TipoPrestige.Extincion  => EstadoPrestige.CapFosiles - recursoActual,
+            TipoPrestige.Glaciacion => EstadoPrestige.CapGenes   - recursoActual,
+            TipoPrestige.BigBang    => EstadoPrestige.CapQuarks  - recursoActual,
+            _ => 0
+        };
+        en5m  = System.Math.Min(en5m, restante);
+        en30m = System.Math.Min(en30m, restante);
 
         // Multiplicador actual → después de prestige
         double multActual = 1.0 + recursoActual * multPorUnidad;
@@ -1555,7 +1585,7 @@ public class UIManager : MonoBehaviour
     void OnClickPrestige(TipoPrestige tipo)
     {
         GameController.Instance?.HacerPrestige(tipo);
-        MostrarPantalla(Panel_Principal);
+        // La navegación y reset visual los maneja OnPrestigeRealizado via EventBus
     }
 
     void OnClickAceptarEvento()
@@ -1653,6 +1683,27 @@ public class UIManager : MonoBehaviour
 
         MostrarBannerMision("MISION COMPLETADA\n" + nombre
             + "\nRecoge tu recompensa en Misiones > Completadas");
+    }
+
+    void OnPrestigeRealizado(EventoPrestigeRealizado evt)
+    {
+        // Volver a pantalla principal
+        MostrarPantalla(Panel_Principal);
+
+        // Resetear visual del planeta a Era 1
+        var gc = GameController.Instance;
+        if (gc != null && eraManager != null)
+            eraManager.AplicarEraVisual(gc.Estado.EraActual);
+
+        // Notificar al jugador
+        string tipo = evt.Tipo switch
+        {
+            TipoPrestige.Extincion  => "Extincion",
+            TipoPrestige.Glaciacion => "Glaciacion",
+            TipoPrestige.BigBang    => "Big Bang",
+            _                       => "Prestige"
+        };
+        MostrarBannerMision(tipo + " completado\n+" + Formateador.Numero(evt.Ganancia) + " recursos");
     }
 
     // ══════════════════════════════════════════════════════════════════════

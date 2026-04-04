@@ -156,6 +156,19 @@ namespace Terra.Controllers
             Racha.AsignarEstado(Estado);
             Misiones.AsignarEstado(Estado);
             _offline.AsignarEstado(Estado);
+
+            // 6. Suscribir a prestige para reconectar sistemas
+            EventBus.Suscribir<EventoPrestigeRealizado>(OnPrestigeRealizado);
+        }
+
+        private void OnPrestigeRealizado(EventoPrestigeRealizado evt)
+        {
+            // Tras el reset, reconectar desbloqueos de Era 1
+            Mejoras.ComprobarDesbloqueos();
+            Cadenas.ComprobarDesbloqueos();
+            Sinergias.Comprobar();
+            Arbol.ComprobarDesbloqueos();
+            Estado.EVPorSegundo = _calculador.Calcular(Estado);
         }
 
         private void CargarYCalcularOffline()

@@ -63,6 +63,15 @@ namespace Terra.State
         public int VecesGlaciacion;
         public int VecesBigBang;
 
+        // Caps — limitan la acumulación total de cada recurso
+        public const double CapFosiles = 25;
+        public const double CapGenes   = 20;
+        public const double CapQuarks  = 6;
+
+        public bool FosilesAlMax => Fosiles >= CapFosiles;
+        public bool GenesAlMax  => Genes  >= CapGenes;
+        public bool QuarksAlMax => Quarks >= CapQuarks;
+
         public double MultiplicadorFosiles  => 1.0 + Fosiles  * 0.1;
         public double MultiplicadorGenes    => 1.0 + Genes    * 0.05;
         public double MultiplicadorQuarks   => 1.0 + Quarks   * 2.0;
