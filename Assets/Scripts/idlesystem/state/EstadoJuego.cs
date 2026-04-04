@@ -152,6 +152,19 @@ namespace Terra.State
         }
     }
 
+    // ── Misión completada (con estado de recompensa) ──────────────────────
+    [Serializable]
+    public class MisionCompletada
+    {
+        public string Id;
+        public bool RecompensaRecogida;
+
+        public MisionCompletada(string id)
+        {
+            Id = id; RecompensaRecogida = false;
+        }
+    }
+
     // ── Estado de nodo del Códice ─────────────────────────────────────────
     [Serializable]
     public class EstadoNodoCodice
@@ -208,7 +221,7 @@ namespace Terra.State
 
         // Misiones
         public EstadoMision[] MisionesActivas = new EstadoMision[3];
-        public HashSet<string> MisionesCompletadas = new HashSet<string>();
+        public List<MisionCompletada> MisionesCompletadas = new List<MisionCompletada>();
 
         // Códice Fósil
         public Dictionary<string, EstadoNodoCodice> NodosCodice

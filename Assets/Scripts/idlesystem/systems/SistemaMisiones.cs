@@ -9,8 +9,8 @@ namespace Terra.Systems
 {
     /// <summary>
     /// Gestiona 3 misiones activas simultáneas.
-    /// Se suscribe a eventos del bus para trackear progreso automáticamente.
-    /// Al completar, otorga recompensa y rota la siguiente misión del pool.
+    /// Al completar objetivo → pasa a Completadas (sin recompensa automática).
+    /// El jugador recoge la recompensa manualmente desde la UI.
     /// </summary>
     public class SistemaMisiones : ISistema
     {
@@ -73,20 +73,9 @@ namespace Terra.Systems
             IncrementarMisionesDeTipo(TipoMision.Compra, 1);
         }
 
-        private void OnSinergia(EventoSinergiaActivada evt)
-        {
-            // Las sinergias se evalúan por cantidad total, no incremento
-        }
-
-        private void OnEra(EventoEraAvanzada evt)
-        {
-            // Las eras se evalúan por valor actual, no incremento
-        }
-
-        private void OnPrestige(EventoPrestigeRealizado evt)
-        {
-            // El prestige se evalúa por contadores totales
-        }
+        private void OnSinergia(EventoSinergiaActivada evt) { }
+        private void OnEra(EventoEraAvanzada evt) { }
+        private void OnPrestige(EventoPrestigeRealizado evt) { }
 
         private void OnCombo(EventoComboActivado evt)
         {
@@ -126,7 +115,6 @@ namespace Terra.Systems
                 var def = BuscarDefinicion(est.Id);
                 if (def == null) continue;
 
-                // Actualizar progreso de tipos que se evalúan por estado actual
                 ActualizarProgresoEstado(est, def);
 
                 if (est.ProgresoActual >= def.ValorObjetivo)
@@ -151,7 +139,6 @@ namespace Terra.Systems
                     est.ProgresoActual = _estado.EraActual;
                     break;
                 case TipoMision.Prestige:
-                    // Evaluar según el id de la misión
                     if (def.Id.Contains("pre_01"))
                         est.ProgresoActual = _estado.Prestige.VecesExtincion;
                     else if (def.Id.Contains("pre_02"))
@@ -162,52 +149,46 @@ namespace Terra.Systems
             }
         }
 
-        // ── Completar y recompensar ───────────────────────────────────────
+        // ── Completar (sin recompensa — el jugador la recoge) ─────────────
 
         private void CompletarMision(int slot, DefinicionMision def)
         {
             _estado.MisionesActivas[slot].Completada = true;
-            _estado.MisionesCompletadas.Add(def.Id);
 
-            OtorgarRecompensa(def);
+            // Mover a completadas (recompensa pendiente)
+            _estado.MisionesCompletadas.Add(new MisionCompletada(def.Id));
+
             EventBus.Publicar(new EventoMisionCompletada(def.Id));
-
-            Debug.Log($"[Misiones] Completada: {def.Nombre} — Recompensa: {def.TipoRecompensa}");
+            Debug.Log($"[Misiones] Completada: {def.Nombre} — recompensa pendiente de recoger");
 
             // Asignar siguiente misión al slot
             AsignarMisionAlSlot(slot);
         }
 
-        private void OtorgarRecompensa(DefinicionMision def)
+        // ── Recoger recompensa (llamado desde UI) ─────────────────────────
+
+        public bool RecogerRecompensa(string misionId)
         {
-            switch (def.TipoRecompensa)
-            {
-                case TipoRecompensa.EVInstante:
-                    // ValorRecompensa = segundos de producción actual
-                    _estado.EnergiaVital += _estado.EVPorSegundo * def.ValorRecompensa;
-                    break;
+            var completada = _estado.MisionesCompletadas.Find(m => m.Id == misionId);
+            if (completada == null || completada.RecompensaRecogida) return false;
 
-                case TipoRecompensa.MultiplicadorTemporal:
-                    _estado.MultiplicadorEvento = def.ValorRecompensa;
-                    _estado.TiempoRestanteEvento = 30f;
-                    break;
+            var def = BuscarDefinicion(misionId);
+            if (def == null) return false;
 
-                case TipoRecompensa.FosilesExtra:
-                    _estado.Prestige.Fosiles += def.ValorRecompensa;
-                    break;
+            // Todas las recompensas son EV por ahora
+            _estado.EnergiaVital += _estado.EVPorSegundo * def.ValorRecompensa;
 
-                case TipoRecompensa.NivelNodoGratis:
-                    // Buscar un nodo desbloqueado que no esté al max
-                    foreach (var kv in _estado.Nodos)
-                    {
-                        if (kv.Value.Desbloqueado && kv.Value.Nivel < 10)
-                        {
-                            kv.Value.Nivel++;
-                            break;
-                        }
-                    }
-                    break;
-            }
+            completada.RecompensaRecogida = true;
+            Debug.Log($"[Misiones] Recompensa recogida: {def.Nombre} (+{def.ValorRecompensa}s de EV)");
+            return true;
+        }
+
+        /// <summary>Devuelve true si hay al menos una misión completada con recompensa pendiente.</summary>
+        public bool HayRecompensaPendiente()
+        {
+            foreach (var m in _estado.MisionesCompletadas)
+                if (!m.RecompensaRecogida) return true;
+            return false;
         }
 
         // ── Pool y asignación ─────────────────────────────────────────────
@@ -229,22 +210,21 @@ namespace Terra.Systems
         private List<DefinicionMision> ObtenerPool()
         {
             var pool = new List<DefinicionMision>();
-            // IDs ya activos en los 3 slots
             var activos = new HashSet<string>();
             for (int i = 0; i < 3; i++)
                 if (_estado.MisionesActivas[i] != null && !string.IsNullOrEmpty(_estado.MisionesActivas[i].Id))
                     activos.Add(_estado.MisionesActivas[i].Id);
 
+            var completadaIds = new HashSet<string>();
+            foreach (var m in _estado.MisionesCompletadas)
+                completadaIds.Add(m.Id);
+
             foreach (var def in _definiciones)
             {
-                // Ya completada
-                if (_estado.MisionesCompletadas.Contains(def.Id)) continue;
-                // Ya activa en otro slot
+                if (completadaIds.Contains(def.Id)) continue;
                 if (activos.Contains(def.Id)) continue;
-                // Era no alcanzada
                 if (def.EraMinima > _estado.EraActual) continue;
-                // Si es progresiva, verificar que la anterior esté completada
-                if (!EsDisponible(def)) continue;
+                if (!EsDisponible(def, completadaIds)) continue;
 
                 pool.Add(def);
             }
@@ -252,16 +232,14 @@ namespace Terra.Systems
             return pool;
         }
 
-        private bool EsDisponible(DefinicionMision def)
+        private bool EsDisponible(DefinicionMision def, HashSet<string> completadaIds)
         {
-            // Si es la primera de su cadena (no hay previa que la apunte), disponible
-            // Si alguna otra misión tiene MisionSiguienteId == def.Id, esa debe estar completada
             foreach (var otra in _definiciones)
             {
                 if (otra.MisionSiguienteId == def.Id)
-                    return _estado.MisionesCompletadas.Contains(otra.Id);
+                    return completadaIds.Contains(otra.Id);
             }
-            return true; // nadie la apunta → es inicio de cadena
+            return true;
         }
 
         // ── Consultas ─────────────────────────────────────────────────────
@@ -282,5 +260,7 @@ namespace Terra.Systems
         }
 
         public int MisionesCompletadasTotal() => _estado.MisionesCompletadas.Count;
+
+        public DefinicionMision[] ObtenerTodasDefiniciones() => _definiciones;
     }
 }

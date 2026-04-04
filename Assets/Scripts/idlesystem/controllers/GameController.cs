@@ -57,7 +57,14 @@ namespace Terra.Controllers
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
-            Inicializar();
+            try
+            {
+                Inicializar();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[TERRA] Error fatal en Inicializar(): {e}");
+            }
         }
 
         void Start()
@@ -67,6 +74,8 @@ namespace Terra.Controllers
 
         void Update()
         {
+            if (_guardado == null || Estado == null) return;
+
             float deltaReal = Time.deltaTime;
             float deltaSimulado = deltaReal * VelocidadSimulacion;
 
@@ -84,13 +93,15 @@ namespace Terra.Controllers
 
         void OnApplicationPause(bool pausa)
         {
-            if (pausa) _offline.GuardarTimestamp();
+            if (_guardado == null || Estado == null) return;
+            if (pausa) _offline?.GuardarTimestamp();
             _guardado.Guardar(Estado);
         }
 
         void OnApplicationQuit()
         {
-            _offline.GuardarTimestamp();
+            if (_guardado == null || Estado == null) return;
+            _offline?.GuardarTimestamp();
             _guardado.Guardar(Estado);
         }
 
@@ -122,7 +133,7 @@ namespace Terra.Controllers
             Mejoras = new SistemaMejoras(defMejoras);
             Sinergias = new SistemaSinergias(defSinergias, Mejoras);
             Prestige = new SistemaPrestige(_calculador);
-            Eras = new SistemaEras(defEras, Mejoras, Sinergias);
+            Eras = new SistemaEras(defEras, Mejoras, Sinergias, Cadenas);
             Arbol = new SistemaArbol(defNodos);
             Eventos = new SistemaEventos(defEventos);
             Logros = new SistemaLogros(defLogros);
@@ -177,6 +188,8 @@ namespace Terra.Controllers
 
         private void ActualizarSistemas(float delta)
         {
+            if (_calculador == null || Estado == null) return;
+
             // EV
             Estado.EVPorSegundo = _calculador.Calcular(Estado);
             double ganancia = Estado.EVPorSegundo * delta;
@@ -247,7 +260,7 @@ namespace Terra.Controllers
 
         void OnGUI()
         {
-            if (!Application.isPlaying) return;
+            if (!Application.isPlaying || Estado == null || Sinergias == null) return;
             GUILayout.Label($"EV: {Formateador.Numero(Estado.EnergiaVital)}");
             GUILayout.Label($"EV/s: {Formateador.Numero(Estado.EVPorSegundo)}");
             GUILayout.Label($"Era: {Estado.EraActual}");

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Terra.Core;
 using Terra.State;
 using UnityEngine;
@@ -36,6 +37,10 @@ namespace Terra.Systems
             public string logros;
             // Cadenas: id:nivel separados por |
             public string cadenas;
+            // Misiones activas: id:progreso separados por |
+            public string misionesActivas;
+            // Misiones completadas: ids separados por |
+            public string misionesCompletadas;
         }
 
         public void Guardar(EstadoJuego estado)
@@ -82,6 +87,22 @@ namespace Terra.Systems
                 if (kv.Value.Nivel > 0)
                     partesCadenas.Append($"{kv.Key}:{kv.Value.Nivel}|");
             datos.cadenas = partesCadenas.ToString();
+
+            // Serializar misiones activas (id:progreso)
+            var partesMisiones = new System.Text.StringBuilder();
+            for (int i = 0; i < 3; i++)
+            {
+                var m = estado.MisionesActivas[i];
+                if (m != null && !string.IsNullOrEmpty(m.Id))
+                    partesMisiones.Append($"{m.Id}:{m.ProgresoActual.ToString(CultureInfo.InvariantCulture)}:{(m.Completada ? 1 : 0)}|");
+            }
+            datos.misionesActivas = partesMisiones.ToString();
+
+            // Serializar misiones completadas (id:recogida)
+            var partesCompletadas = new System.Text.StringBuilder();
+            foreach (var mc in estado.MisionesCompletadas)
+                partesCompletadas.Append($"{mc.Id}:{(mc.RecompensaRecogida ? 1 : 0)}|");
+            datos.misionesCompletadas = partesCompletadas.ToString();
 
             string json = JsonUtility.ToJson(datos);
             PlayerPrefs.SetString(KEY_GUARDADO, json);
@@ -158,6 +179,38 @@ namespace Terra.Systems
                         if (int.TryParse(kv[1], out int nivel) && estado.Cadenas.ContainsKey(id))
                             estado.Cadenas[id].Nivel = nivel;
                     }
+
+                // Cargar misiones completadas (id:recogida o solo id para compat)
+                if (!string.IsNullOrEmpty(datos.misionesCompletadas))
+                    foreach (var parte in datos.misionesCompletadas.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(parte)) continue;
+                        var kv = parte.Split(':');
+                        string id = kv[0];
+                        bool recogida = kv.Length >= 2 && kv[1] == "1";
+                        estado.MisionesCompletadas.Add(new MisionCompletada(id) { RecompensaRecogida = recogida });
+                    }
+
+                // Cargar misiones activas (id:progreso:completada)
+                if (!string.IsNullOrEmpty(datos.misionesActivas))
+                {
+                    int slot = 0;
+                    foreach (var parte in datos.misionesActivas.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(parte) || slot >= 3) continue;
+                        var kv = parte.Split(':');
+                        if (kv.Length < 2) continue;
+                        string id = kv[0];
+                        double.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double progreso);
+                        bool completada = kv.Length >= 3 && kv[2] == "1";
+                        estado.MisionesActivas[slot] = new EstadoMision(id)
+                        {
+                            ProgresoActual = progreso,
+                            Completada = completada
+                        };
+                        slot++;
+                    }
+                }
 
                 return true;
             }

@@ -73,14 +73,17 @@ namespace Terra.Systems
         private readonly DefinicionEra[] _definiciones;
         private readonly SistemaMejoras _sistemaMejoras;
         private readonly SistemaSinergias _sistemaSinergias;
+        private readonly SistemaCadenas _sistemaCadenas;
         private EstadoJuego _estado;
 
         public SistemaEras(DefinicionEra[] defs,
-            SistemaMejoras mejoras, SistemaSinergias sinergias)
+            SistemaMejoras mejoras, SistemaSinergias sinergias,
+            SistemaCadenas cadenas)
         {
             _definiciones = defs;
             _sistemaMejoras = mejoras;
             _sistemaSinergias = sinergias;
+            _sistemaCadenas = cadenas;
         }
 
         public void AsignarEstado(EstadoJuego estado) => _estado = estado;
@@ -93,10 +96,13 @@ namespace Terra.Systems
 
             var condicion = _definiciones[_estado.EraActual].Condicion;
 
-            // Comprobar nivel mínimo de cada pilar
+            // Comprobar nivel mínimo solo de los pilares desbloqueados
             foreach (TipoPilar pilar in Enum.GetValues(typeof(TipoPilar)))
+            {
+                if (!_sistemaCadenas.CadenaPilarDesbloqueada(pilar)) continue;
                 if (_sistemaMejoras.NivelTotalPilar(pilar) < condicion.NivelTotalPorPilar)
                     return false;
+            }
 
             // Comprobar EV requerida
             if (_estado.EnergiaVital < condicion.EVRequerida) return false;
@@ -116,11 +122,17 @@ namespace Terra.Systems
             _estado.EnergiaVital -= _definiciones[_estado.EraActual].Condicion.EVRequerida;
             _estado.EraActual++;
 
+            // Desbloquear cadenas de la nueva era
+            _sistemaCadenas.ComprobarDesbloqueos();
+
             EventBus.Publicar(new EventoEraAvanzada(_estado.EraActual));
         }
 
         public DefinicionEra ObtenerDefinicionActual() =>
             _definiciones[_estado.EraActual - 1];
+
+        public CondicionEra ObtenerCondicionSiguiente() =>
+            _estado.EraActual < 8 ? _definiciones[_estado.EraActual].Condicion : null;
 
         public double ProgresoHaciaEra()
         {
@@ -132,12 +144,13 @@ namespace Terra.Systems
             double nivelMin = double.MaxValue;
             foreach (TipoPilar pilar in Enum.GetValues(typeof(TipoPilar)))
             {
+                if (!_sistemaCadenas.CadenaPilarDesbloqueada(pilar)) continue;
                 double progresoPilar = (double)_sistemaMejoras.NivelTotalPilar(pilar)
                     / condicion.NivelTotalPorPilar;
                 nivelMin = Math.Min(nivelMin, progresoPilar);
             }
 
-            return Math.Min(nivelMin, 1.0);
+            return nivelMin == double.MaxValue ? 1.0 : Math.Min(nivelMin, 1.0);
         }
     }
 

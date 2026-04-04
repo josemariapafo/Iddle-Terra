@@ -25,26 +25,42 @@ namespace Terra.Data.Catalogos
 
     public static class CatalogoEras
     {
+        // Pilares disponibles por era:
+        //   Era 1: Tierra
+        //   Era 2: Tierra + Océanos
+        //   Era 3: Tierra + Océanos + Atmósfera
+        //   Era 4+: Los 4 pilares
+        //
+        // Las sinergias requeridas solo usan pilares YA disponibles:
+        //   sin_04 = Tierra+Océanos      → posible desde Era 2
+        //   sin_01 = Atmósfera+Océanos    → posible desde Era 3
+        //   sin_06 = Atmósfera+Tierra     → posible desde Era 3
+        //   sin_02 = Tierra+Vida          → posible desde Era 4
+        //   sin_03 = Océanos+Vida         → posible desde Era 4
         public static DefinicionEra[] Crear() => new[]
         {
             new DefinicionEra(1, "Roca Primordial",       "Un planeta gris y silencioso emerge del caos",
                 new CondicionEra(0, 0),
                 "era1_earth_day", ""),
 
+            // Era 1→2: solo Tierra disponible
             new DefinicionEra(2, "Primeros Océanos",      "El agua líquida cubre los primeros continentes",
                 new CondicionEra(4, 2_000),
                 "era2_earth_day", ""),
 
+            // Era 2→3: Tierra+Océanos disponibles. sin_04 = Erosión fértil (Tierra+Océanos)
             new DefinicionEra(3, "Vida Marina",           "El mar explota con vida en la era Cámbrica",
-                new CondicionEra(10, 40_000, new[]{"sin_01"}),
+                new CondicionEra(10, 40_000, new[]{"sin_04"}),
                 "era3_earth_day", ""),
 
+            // Era 3→4: T+O+A disponibles. sin_01 = Ciclo del agua (Atm+Oce)
             new DefinicionEra(4, "Pangea",                "Un supercontinente único domina el planeta",
-                new CondicionEra(25, 800_000, new[]{"sin_02"}),
+                new CondicionEra(25, 800_000, new[]{"sin_01"}),
                 "era4_earth_day", ""),
 
+            // Era 4→5: los 4 pilares. sin_02 = Ecosistema primario (Tie+Vid), sin_03 = Fotosíntesis marina (Oce+Vid)
             new DefinicionEra(5, "Jurásico",              "Los dinosaurios reinan sobre un planeta verde",
-                new CondicionEra(40, 8_000_000, new[]{"sin_03","sin_05"}),
+                new CondicionEra(40, 8_000_000, new[]{"sin_02","sin_03"}),
                 "era5_earth_day", ""),
 
             new DefinicionEra(6, "Civilización Primitiva","La humanidad da sus primeros pasos",

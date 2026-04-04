@@ -5,6 +5,7 @@ using TMPro;
 using Terra.Controllers;
 using Terra.Core;
 using Terra.Data;
+using Terra.State;
 using Terra.Systems;
 
 /// <summary>
@@ -105,6 +106,16 @@ public class UIManager : MonoBehaviour
     public Button Btn_ComprarNodo;
     public Button Btn_CerrarPopup;
 
+    // ── Panel Misiones ──────────────────────────────────────────────────
+    [Header("Misiones")]
+    public GameObject Panel_Misiones;
+    public Button Btn_AbrirMisiones;
+    public Button Btn_CerrarMisiones;
+
+    [Header("Banner Mision Completada")]
+    public GameObject Panel_BannerMision;
+    public TextMeshProUGUI Text_BannerMision;
+
     // ── Indicador estancamiento ───────────────────────────────────────────
     [Header("Indicador estancamiento")]
     public GameObject Indicador_Estancamiento;
@@ -142,6 +153,18 @@ public class UIManager : MonoBehaviour
     private readonly List<(GameObject nodo, DefinicionNodo def)> _nodosActivos
         = new List<(GameObject, DefinicionNodo)>();
     private string _nodoSeleccionadoId;
+    private float _timerBannerMision = 0f;
+    private const float DURACION_BANNER_MISION = 3f;
+
+    // ── Misiones: UI dinámica ─────────────────────────────────────────
+    private bool _misionesTabCompletadas = false;
+    private Transform _contenedorMisionesActivas;
+    private Transform _contenedorMisionesCompletadas;
+    private Button _btnTabPorHacer;
+    private Button _btnTabCompletadas;
+    private TextMeshProUGUI _txtTabPorHacer;
+    private TextMeshProUGUI _txtTabCompletadas;
+    private TextMeshProUGUI _txtBadgeMisiones;
 
     static readonly string[][] _zonasNombres =
     {
@@ -165,6 +188,7 @@ public class UIManager : MonoBehaviour
     {
         ConfigurarBotones();
         SuscribirEventos();
+        InicializarPanelMisiones();
         MostrarPantalla(Panel_Principal);
         ComprobarBonusDiario();
     }
@@ -184,6 +208,8 @@ public class UIManager : MonoBehaviour
             ActualizarPrestige();
         if (Panel_Evolucion != null && Panel_Evolucion.activeSelf)
             ActualizarNodosArbol();
+        if (Panel_Misiones != null && Panel_Misiones.activeSelf)
+            ActualizarWidgetMisiones();
     }
 
     void OnDestroy()
@@ -204,6 +230,8 @@ public class UIManager : MonoBehaviour
 
         Btn_Evolucionar?.onClick.AddListener(OnClickEvolucionar);
         Btn_CerrarCategoria?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+        Btn_AbrirMisiones?.onClick.AddListener(() => { CambiarTabMisiones(false); MostrarPantalla(Panel_Misiones); });
+        Btn_CerrarMisiones?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
         Btn_AbrirEvolucion?.onClick.AddListener(() => AbrirEvolucion());
         Btn_CerrarEvolucion?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
         Btn_ComprarNodo?.onClick.AddListener(OnClickComprarNodo);
@@ -242,6 +270,7 @@ public class UIManager : MonoBehaviour
         EventBus.Suscribir<EventoSinergiaActivada>(OnSinergiaActivada);
         EventBus.Suscribir<EventoLogroDesbloqueado>(OnLogroDesbloqueado);
         EventBus.Suscribir<EventoMejoraDesbloqueada>(OnMejoraDesbloqueada);
+        EventBus.Suscribir<EventoMisionCompletada>(OnMisionCompletada);
     }
 
     void DesuscribirEventos()
@@ -252,6 +281,7 @@ public class UIManager : MonoBehaviour
         EventBus.Desuscribir<EventoSinergiaActivada>(OnSinergiaActivada);
         EventBus.Desuscribir<EventoLogroDesbloqueado>(OnLogroDesbloqueado);
         EventBus.Desuscribir<EventoMejoraDesbloqueada>(OnMejoraDesbloqueada);
+        EventBus.Desuscribir<EventoMisionCompletada>(OnMisionCompletada);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -284,15 +314,38 @@ public class UIManager : MonoBehaviour
         if (Btn_Evolucionar != null)
             Btn_Evolucionar.interactable = puedeEvolucionar;
         if (Text_BtnEvolucionar != null)
-            Text_BtnEvolucionar.text = puedeEvolucionar
-                ? "EVOLUCIONAR"
-                : "EVOLUCIONAR\n" + Formateador.Porcentaje(progreso);
+        {
+            if (puedeEvolucionar)
+            {
+                Text_BtnEvolucionar.text = "EVOLUCIONAR";
+            }
+            else
+            {
+                var cond = gc.Eras.ObtenerCondicionSiguiente();
+                if (cond != null && progreso >= 1.0 && estado.EnergiaVital < cond.EVRequerida)
+                    Text_BtnEvolucionar.text = "EVOLUCIONAR\nFaltan "
+                        + Formateador.Numero(cond.EVRequerida - estado.EnergiaVital) + " EV";
+                else
+                    Text_BtnEvolucionar.text = "EVOLUCIONAR\n" + Formateador.Porcentaje(progreso);
+            }
+        }
 
         if (Indicador_Estancamiento != null)
             Indicador_Estancamiento.SetActive(gc.Estancamiento.EstaEstancado());
 
+        // Deshabilitar pilares sin infraestructura activa
+        if (Btn_Atmosfera != null) Btn_Atmosfera.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Atmosfera);
+        if (Btn_Oceanos != null) Btn_Oceanos.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Oceanos);
+        if (Btn_Tierra != null) Btn_Tierra.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Tierra);
+        if (Btn_Vida != null) Btn_Vida.interactable = gc.Cadenas.CadenaPilarDesbloqueada(TipoPilar.Vida);
+
+        // Botón misiones visible desde Era 2
+        if (Btn_AbrirMisiones != null)
+            Btn_AbrirMisiones.gameObject.SetActive(estado.EraActual >= 2);
+
         ActualizarResumenCadenas();
         ActualizarMetaProxima();
+        ActualizarBannerMision();
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -771,6 +824,425 @@ public class UIManager : MonoBehaviour
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // WIDGET MISIONES (HUD)
+    // ══════════════════════════════════════════════════════════════════════
+
+    // ── Inicializar panel de misiones (generación dinámica) ──────────────
+
+    void InicializarPanelMisiones()
+    {
+        if (Panel_Misiones == null) return;
+
+        // Forzar que el panel ocupe toda la pantalla (en escena esta anclado abajo con 695px)
+        var panelRT = Panel_Misiones.GetComponent<RectTransform>();
+        panelRT.anchorMin = Vector2.zero;
+        panelRT.anchorMax = Vector2.one;
+        panelRT.offsetMin = Vector2.zero;
+        panelRT.offsetMax = Vector2.zero;
+
+        // Limpiar hijos existentes del panel (Fila_Mision0/1/2 viejos)
+        for (int i = panelRT.childCount - 1; i >= 0; i--)
+        {
+            var child = panelRT.GetChild(i);
+            string n = child.gameObject.name;
+            if (n.StartsWith("Fila_Mision") || n == "Text_MisionesCompletadas")
+                Destroy(child.gameObject);
+        }
+
+        // ── Pestañas (pegadas arriba) ──
+        var tabBar = CrearContenedor(panelRT, "TabBar_Misiones", 0, -5, 1360, 55);
+
+        var goPorHacer = CrearBotonUI(tabBar, "Btn_TabPorHacer", "POR HACER", -185, 0, 360, 50);
+        _btnTabPorHacer = goPorHacer.GetComponent<Button>();
+        _txtTabPorHacer = goPorHacer.GetComponentInChildren<TextMeshProUGUI>();
+
+        var goCompletadas = CrearBotonUI(tabBar, "Btn_TabCompletadas", "COMPLETADAS", 185, 0, 360, 50);
+        _btnTabCompletadas = goCompletadas.GetComponent<Button>();
+        _txtTabCompletadas = goCompletadas.GetComponentInChildren<TextMeshProUGUI>();
+
+        _btnTabPorHacer.onClick.AddListener(() => CambiarTabMisiones(false));
+        _btnTabCompletadas.onClick.AddListener(() => CambiarTabMisiones(true));
+
+        // ── Contenedor activas (justo debajo de tabs, margen minimo) ──
+        var goActivas = new GameObject("Contenedor_MisionesActivas", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        goActivas.transform.SetParent(panelRT, false);
+        var rtActivas = goActivas.GetComponent<RectTransform>();
+        rtActivas.anchorMin = new Vector2(0, 0);
+        rtActivas.anchorMax = new Vector2(1, 1);
+        rtActivas.offsetMin = new Vector2(10, 10);   // margen inferior/izq minimo
+        rtActivas.offsetMax = new Vector2(-10, -65);  // justo debajo de tabs
+        var vlgActivas = goActivas.GetComponent<VerticalLayoutGroup>();
+        vlgActivas.spacing = 12;
+        vlgActivas.childForceExpandWidth = true;
+        vlgActivas.childForceExpandHeight = false;
+        vlgActivas.childControlWidth = true;
+        vlgActivas.childControlHeight = false;
+        _contenedorMisionesActivas = goActivas.transform;
+
+        // ── Contenedor completadas ──
+        var goComp = new GameObject("Contenedor_MisionesCompletadas", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        goComp.transform.SetParent(panelRT, false);
+        var rtComp = goComp.GetComponent<RectTransform>();
+        rtComp.anchorMin = new Vector2(0, 0);
+        rtComp.anchorMax = new Vector2(1, 1);
+        rtComp.offsetMin = new Vector2(10, 10);
+        rtComp.offsetMax = new Vector2(-10, -65);
+        var vlgComp = goComp.GetComponent<VerticalLayoutGroup>();
+        vlgComp.spacing = 10;
+        vlgComp.childForceExpandWidth = true;
+        vlgComp.childForceExpandHeight = false;
+        vlgComp.childControlWidth = true;
+        vlgComp.childControlHeight = false;
+        _contenedorMisionesCompletadas = goComp.transform;
+
+        _misionesTabCompletadas = false;
+    }
+
+    void CambiarTabMisiones(bool completadas)
+    {
+        _misionesTabCompletadas = completadas;
+        if (_contenedorMisionesActivas != null)
+            _contenedorMisionesActivas.gameObject.SetActive(!completadas);
+        if (_contenedorMisionesCompletadas != null)
+            _contenedorMisionesCompletadas.gameObject.SetActive(completadas);
+
+        // Colores de pestañas
+        if (_txtTabPorHacer != null)
+            _txtTabPorHacer.color = completadas ? Color.gray : Color.white;
+        if (_txtTabCompletadas != null)
+            _txtTabCompletadas.color = completadas ? Color.white : Color.gray;
+    }
+
+    // ── Actualizar UI misiones (llamado en Update) ────────────────────
+
+    void ActualizarWidgetMisiones()
+    {
+        if (Panel_Misiones == null || !Panel_Misiones.activeSelf) return;
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        if (_misionesTabCompletadas)
+            RegenerarMisionesCompletadas(gc);
+        else
+            RegenerarMisionesActivas(gc);
+
+        ActualizarBadgeMisiones(gc);
+    }
+
+    void RegenerarMisionesActivas(GameController gc)
+    {
+        if (_contenedorMisionesActivas == null) return;
+
+        // Limpiar
+        for (int i = _contenedorMisionesActivas.childCount - 1; i >= 0; i--)
+            Destroy(_contenedorMisionesActivas.GetChild(i).gameObject);
+
+        bool hayAlguna = false;
+        for (int i = 0; i < 3; i++)
+        {
+            var def = gc.Misiones.ObtenerDefinicionSlot(i);
+            var est = gc.Estado.MisionesActivas[i];
+            if (def == null || est == null || string.IsNullOrEmpty(est.Id)) continue;
+
+            hayAlguna = true;
+            CrearFilaMisionActiva(def, est);
+        }
+
+        if (!hayAlguna)
+        {
+            var goVacio = CrearTextoUI(_contenedorMisionesActivas, "Text_SinMisiones",
+                "No hay misiones disponibles por ahora.", 20);
+            var rt = goVacio.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(0, 40);
+        }
+    }
+
+    void CrearFilaMisionActiva(DefinicionMision def, Terra.State.EstadoMision est)
+    {
+        // Contenedor de la fila
+        var fila = new GameObject("Fila_" + def.Id, typeof(RectTransform), typeof(VerticalLayoutGroup),
+            typeof(CanvasRenderer), typeof(Image));
+        fila.transform.SetParent(_contenedorMisionesActivas, false);
+        var rtFila = fila.GetComponent<RectTransform>();
+        rtFila.sizeDelta = new Vector2(0, 155);
+        var vlg = fila.GetComponent<VerticalLayoutGroup>();
+        vlg.padding = new RectOffset(20, 20, 10, 10);
+        vlg.spacing = 6;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = false;
+        var img = fila.GetComponent<Image>();
+        img.color = new Color(0.15f, 0.15f, 0.2f, 0.9f);
+
+        // Nombre
+        var goNombre = CrearTextoUI(fila.transform, "Nombre", "<b>" + def.Nombre + "</b>", 24);
+        goNombre.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 30);
+
+        // Descripción (más alta para que quepa el texto completo)
+        var goDesc = CrearTextoUI(fila.transform, "Desc", def.Descripcion, 19);
+        goDesc.GetComponent<TextMeshProUGUI>().color = new Color(0.85f, 0.85f, 0.85f);
+        goDesc.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
+
+        // Barra de progreso
+        float progreso = def.ValorObjetivo > 0
+            ? (float)System.Math.Min(est.ProgresoActual / def.ValorObjetivo, 1.0)
+            : 0f;
+
+        var goBarraContainer = new GameObject("BarraContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        goBarraContainer.transform.SetParent(fila.transform, false);
+        goBarraContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 28);
+        var hlg = goBarraContainer.GetComponent<HorizontalLayoutGroup>();
+        hlg.spacing = 15;
+        hlg.childForceExpandWidth = false;
+        hlg.childForceExpandHeight = true;
+        hlg.childControlWidth = true;
+        hlg.childControlHeight = true;
+
+        // Slider
+        var goSlider = CrearSliderUI(goBarraContainer.transform, "Slider", progreso);
+        var slLE = goSlider.AddComponent<LayoutElement>();
+        slLE.flexibleWidth = 1;
+
+        // Texto progreso
+        string txtProg = Formateador.Numero(est.ProgresoActual) + " / " + Formateador.Numero(def.ValorObjetivo);
+        var goProgreso = CrearTextoUI(goBarraContainer.transform, "Progreso", txtProg, 18);
+        var progLE = goProgreso.AddComponent<LayoutElement>();
+        progLE.minWidth = 140;
+        progLE.preferredWidth = 140;
+
+        // Recompensa
+        string recompensaTxt = "<color=#FFD700>Recompensa: +" + Formateador.Numero(def.ValorRecompensa) + "s de EV</color>";
+        var goRec = CrearTextoUI(fila.transform, "Recompensa", recompensaTxt, 17);
+        goRec.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 24);
+    }
+
+    void RegenerarMisionesCompletadas(GameController gc)
+    {
+        if (_contenedorMisionesCompletadas == null) return;
+
+        // Limpiar
+        for (int i = _contenedorMisionesCompletadas.childCount - 1; i >= 0; i--)
+            Destroy(_contenedorMisionesCompletadas.GetChild(i).gameObject);
+
+        var completadas = gc.Estado.MisionesCompletadas;
+        if (completadas.Count == 0)
+        {
+            var goVacio = CrearTextoUI(_contenedorMisionesCompletadas, "Text_SinCompletadas",
+                "Aun no has completado ninguna mision.", 20);
+            goVacio.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
+            return;
+        }
+
+        // Mostrar de más reciente a más antigua
+        for (int i = completadas.Count - 1; i >= 0; i--)
+        {
+            var mc = completadas[i];
+            var def = gc.Misiones.BuscarDefinicion(mc.Id);
+            if (def == null) continue;
+
+            CrearFilaMisionCompletada(def, mc, gc);
+        }
+    }
+
+    void CrearFilaMisionCompletada(DefinicionMision def, Terra.State.MisionCompletada mc, GameController gc)
+    {
+        var fila = new GameObject("FilaComp_" + def.Id, typeof(RectTransform), typeof(HorizontalLayoutGroup),
+            typeof(CanvasRenderer), typeof(Image));
+        fila.transform.SetParent(_contenedorMisionesCompletadas, false);
+        var rtFila = fila.GetComponent<RectTransform>();
+        rtFila.sizeDelta = new Vector2(0, 80);
+        var hlg = fila.GetComponent<HorizontalLayoutGroup>();
+        hlg.padding = new RectOffset(20, 20, 10, 10);
+        hlg.spacing = 15;
+        hlg.childForceExpandWidth = false;
+        hlg.childForceExpandHeight = true;
+        hlg.childControlWidth = true;
+        hlg.childControlHeight = true;
+        hlg.childAlignment = TextAnchor.MiddleLeft;
+        var img = fila.GetComponent<Image>();
+        img.color = mc.RecompensaRecogida
+            ? new Color(0.1f, 0.15f, 0.1f, 0.8f)
+            : new Color(0.15f, 0.2f, 0.1f, 0.9f);
+
+        // Check verde + nombre
+        string checkColor = mc.RecompensaRecogida ? "#66AA66" : "#88FF88";
+        string nombre = "<color=" + checkColor + ">V</color>  " + def.Nombre;
+        var goNombre = CrearTextoUI(fila.transform, "Nombre", nombre, 21);
+        var nomLE = goNombre.AddComponent<LayoutElement>();
+        nomLE.flexibleWidth = 1;
+
+        if (mc.RecompensaRecogida)
+        {
+            // Ya recogida
+            var goRecogida = CrearTextoUI(fila.transform, "Estado", "<color=#66AA66>Recogida</color>", 18);
+            var recLE = goRecogida.AddComponent<LayoutElement>();
+            recLE.minWidth = 160;
+            recLE.preferredWidth = 160;
+        }
+        else
+        {
+            // Botón recoger
+            string textoBoton = "Recoger\n<size=80%>+" + Formateador.Numero(def.ValorRecompensa) + "s EV</size>";
+            var goBtn = CrearBotonUI(fila.transform, "Btn_Recoger_" + def.Id, textoBoton, 0, 0, 180, 55);
+            var btnLE = goBtn.AddComponent<LayoutElement>();
+            btnLE.minWidth = 180;
+            btnLE.preferredWidth = 180;
+            var btn = goBtn.GetComponent<Button>();
+            var colores = btn.colors;
+            colores.normalColor = new Color(0.2f, 0.6f, 0.2f);
+            colores.highlightedColor = new Color(0.3f, 0.7f, 0.3f);
+            colores.pressedColor = new Color(0.1f, 0.5f, 0.1f);
+            btn.colors = colores;
+
+            string idCaptura = def.Id;
+            btn.onClick.AddListener(() =>
+            {
+                var gcInner = GameController.Instance;
+                if (gcInner != null && gcInner.Misiones.RecogerRecompensa(idCaptura))
+                {
+                    MostrarBannerMision("RECOMPENSA RECOGIDA\n+" + Formateador.Numero(def.ValorRecompensa) + "s de EV");
+                }
+            });
+        }
+    }
+
+    // ── Badge de misiones pendientes en HUD ───────────────────────────
+
+    void ActualizarBadgeMisiones(GameController gc)
+    {
+        if (Btn_AbrirMisiones == null) return;
+
+        bool hayPendiente = gc.Misiones.HayRecompensaPendiente();
+
+        // Crear badge si no existe
+        if (_txtBadgeMisiones == null)
+        {
+            var goBadge = CrearTextoUI(Btn_AbrirMisiones.transform, "Badge_Misiones", "", 18);
+            _txtBadgeMisiones = goBadge.GetComponent<TextMeshProUGUI>();
+            _txtBadgeMisiones.alignment = TextAlignmentOptions.TopRight;
+            var rtBadge = goBadge.GetComponent<RectTransform>();
+            rtBadge.anchorMin = new Vector2(1, 1);
+            rtBadge.anchorMax = new Vector2(1, 1);
+            rtBadge.anchoredPosition = new Vector2(-5, -5);
+            rtBadge.sizeDelta = new Vector2(30, 30);
+        }
+
+        _txtBadgeMisiones.text = hayPendiente ? "<color=#FF4444>!</color>" : "";
+    }
+
+    // ── Banner ────────────────────────────────────────────────────────
+
+    void ActualizarBannerMision()
+    {
+        if (Panel_BannerMision == null || !Panel_BannerMision.activeSelf) return;
+
+        _timerBannerMision -= INTERVALO_UI;
+        if (_timerBannerMision <= 0)
+            Panel_BannerMision.SetActive(false);
+    }
+
+    void MostrarBannerMision(string texto)
+    {
+        if (Panel_BannerMision == null) return;
+        if (Text_BannerMision != null) Text_BannerMision.text = texto;
+        Panel_BannerMision.SetActive(true);
+        _timerBannerMision = DURACION_BANNER_MISION;
+    }
+
+    // ── Helpers para crear UI dinámica ─────────────────────────────────
+
+    GameObject CrearTextoUI(Transform parent, string nombre, string texto, int fontSize)
+    {
+        var go = new GameObject(nombre, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        go.transform.SetParent(parent, false);
+        var tmp = go.GetComponent<TextMeshProUGUI>();
+        tmp.text = texto;
+        tmp.fontSize = fontSize;
+        tmp.color = Color.white;
+        tmp.richText = true;
+        tmp.enableWordWrapping = true;
+        tmp.overflowMode = TextOverflowModes.Ellipsis;
+        return go;
+    }
+
+    GameObject CrearBotonUI(Transform parent, string nombre, string texto, float x, float y, float w, float h)
+    {
+        var go = new GameObject(nombre, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchoredPosition = new Vector2(x, y);
+        rt.sizeDelta = new Vector2(w, h);
+        var img = go.GetComponent<Image>();
+        img.color = new Color(0.25f, 0.25f, 0.3f);
+
+        // Texto del botón
+        var goTxt = CrearTextoUI(go.transform, "Text", texto, 16);
+        var rtTxt = goTxt.GetComponent<RectTransform>();
+        rtTxt.anchorMin = Vector2.zero;
+        rtTxt.anchorMax = Vector2.one;
+        rtTxt.offsetMin = Vector2.zero;
+        rtTxt.offsetMax = Vector2.zero;
+        goTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+
+        go.GetComponent<Button>().targetGraphic = img;
+        return go;
+    }
+
+    GameObject CrearSliderUI(Transform parent, string nombre, float valor)
+    {
+        var go = new GameObject(nombre, typeof(RectTransform), typeof(Slider));
+        go.transform.SetParent(parent, false);
+        var slider = go.GetComponent<Slider>();
+
+        // Background
+        var goBg = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        goBg.transform.SetParent(go.transform, false);
+        var rtBg = goBg.GetComponent<RectTransform>();
+        rtBg.anchorMin = Vector2.zero;
+        rtBg.anchorMax = Vector2.one;
+        rtBg.offsetMin = Vector2.zero;
+        rtBg.offsetMax = Vector2.zero;
+        goBg.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.25f);
+
+        // Fill area
+        var goFillArea = new GameObject("Fill Area", typeof(RectTransform));
+        goFillArea.transform.SetParent(go.transform, false);
+        var rtFillArea = goFillArea.GetComponent<RectTransform>();
+        rtFillArea.anchorMin = Vector2.zero;
+        rtFillArea.anchorMax = Vector2.one;
+        rtFillArea.offsetMin = Vector2.zero;
+        rtFillArea.offsetMax = Vector2.zero;
+
+        var goFill = new GameObject("Fill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        goFill.transform.SetParent(goFillArea.transform, false);
+        var rtFill = goFill.GetComponent<RectTransform>();
+        rtFill.anchorMin = Vector2.zero;
+        rtFill.anchorMax = new Vector2(0, 1);
+        rtFill.offsetMin = Vector2.zero;
+        rtFill.offsetMax = Vector2.zero;
+        goFill.GetComponent<Image>().color = new Color(0.3f, 0.7f, 0.3f);
+
+        slider.fillRect = rtFill;
+        slider.interactable = false;
+        slider.value = valor;
+
+        return go;
+    }
+
+    Transform CrearContenedor(Transform parent, string nombre, float x, float y, float w, float h)
+    {
+        var go = new GameObject(nombre, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 1);
+        rt.anchorMax = new Vector2(0.5f, 1);
+        rt.anchoredPosition = new Vector2(x, y);
+        rt.sizeDelta = new Vector2(w, h);
+        return go.transform;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // PANEL EVOLUCIÓN (ÁRBOL)
     // ══════════════════════════════════════════════════════════════════════
 
@@ -1058,6 +1530,18 @@ public class UIManager : MonoBehaviour
             ActualizarTarjetas();
     }
 
+    void OnMisionCompletada(EventoMisionCompletada evt)
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        var def = gc.Misiones.BuscarDefinicion(evt.IdMision);
+        string nombre = def != null ? def.Nombre : evt.IdMision;
+
+        MostrarBannerMision("MISION COMPLETADA\n" + nombre
+            + "\nRecoge tu recompensa en Misiones > Completadas");
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // UTILIDADES
     // ══════════════════════════════════════════════════════════════════════
@@ -1180,6 +1664,7 @@ public class UIManager : MonoBehaviour
         Panel_Categoria?.SetActive(pantalla == Panel_Categoria);
         Panel_Prestige?.SetActive(pantalla == Panel_Prestige);
         Panel_Evolucion?.SetActive(pantalla == Panel_Evolucion);
+        Panel_Misiones?.SetActive(pantalla == Panel_Misiones);
         Panel_PopupNodo?.SetActive(false);
         // Evento y EraDesbloqueada se manejan como overlays, no cierran el resto
     }

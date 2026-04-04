@@ -79,18 +79,24 @@ BUGS ARREGLADOS HOY:
 - UI no mostraba cual eslabon limita -> indicador rojo "LIMITA" por eslabon
 
 
+T12: Guardar + UI misiones [COMPLETADA]
+  - SistemaGuardado.cs: serializar misiones activas (id:progreso:completada) y completadas (ids)
+  - Deserializar con CultureInfo.InvariantCulture para compatibilidad de locales
+  - UIManager.cs: Panel_Misiones con 3 barras (nombre + slider + progreso)
+  - Widget visible solo desde Era 2
+  - Banner temporal al completar mision (EventoMisionCompletada, 3s auto-ocultar)
+  - Texto recompensa en banner (EV, multiplicador, fosiles, nodo gratis)
+
+
 SIGUIENTE TAREA:
 ----------------
-T12: Guardar + UI misiones
-  - SistemaGuardado.cs: serializar misiones activas (id+progreso) y completadas
-  - UIManager.cs: widget en pantalla principal con 3 barras de progreso
-  - Notificacion al completar (banner temporal)
-  - Visible desde Era 2
+T13: Revelacion progresiva UI
+  - Ocultar elementos UI hasta que el jugador los necesite
+  - Desbloqueo gradual por era/EV alcanzado
 
 
-TAREAS RESTANTES (T12-T27):
+TAREAS RESTANTES (T13-T27):
 ---------------------------
-T12: Guardar + UI misiones (ALTA)
 T13: Revelacion progresiva UI (ALTA)
 T14: Mejora preview prestige (ALTA)
 T15-T17: Codice Fosil (catalogo, sistema, UI) (ALTA)
