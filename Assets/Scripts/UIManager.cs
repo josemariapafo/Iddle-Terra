@@ -110,7 +110,6 @@ public class UIManager : MonoBehaviour
     [Header("Misiones")]
     public GameObject Panel_Misiones;
     public Button Btn_AbrirMisiones;
-    public Button Btn_CerrarMisiones;
 
     [Header("Banner Mision Completada")]
     public GameObject Panel_BannerMision;
@@ -231,7 +230,7 @@ public class UIManager : MonoBehaviour
         Btn_Evolucionar?.onClick.AddListener(OnClickEvolucionar);
         Btn_CerrarCategoria?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
         Btn_AbrirMisiones?.onClick.AddListener(() => { CambiarTabMisiones(false); MostrarPantalla(Panel_Misiones); });
-        Btn_CerrarMisiones?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+        // Btn_CerrarMisiones se crea dinámicamente en InicializarPanelMisiones
         Btn_AbrirEvolucion?.onClick.AddListener(() => AbrirEvolucion());
         Btn_CerrarEvolucion?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
         Btn_ComprarNodo?.onClick.AddListener(OnClickComprarNodo);
@@ -833,62 +832,78 @@ public class UIManager : MonoBehaviour
     {
         if (Panel_Misiones == null) return;
 
-        // Forzar que el panel ocupe toda la pantalla (en escena esta anclado abajo con 695px)
         var panelRT = Panel_Misiones.GetComponent<RectTransform>();
+
+        // 1. Destruir el VerticalLayoutGroup de la escena (sobreescribe posiciones)
+        var vlgViejo = Panel_Misiones.GetComponent<VerticalLayoutGroup>();
+        if (vlgViejo != null) DestroyImmediate(vlgViejo);
+
+        // 2. Forzar panel a pantalla completa
         panelRT.anchorMin = Vector2.zero;
         panelRT.anchorMax = Vector2.one;
         panelRT.offsetMin = Vector2.zero;
         panelRT.offsetMax = Vector2.zero;
 
-        // Limpiar hijos existentes del panel (Fila_Mision0/1/2 viejos)
+        // 3. Destruir TODOS los hijos viejos de la escena
         for (int i = panelRT.childCount - 1; i >= 0; i--)
-        {
-            var child = panelRT.GetChild(i);
-            string n = child.gameObject.name;
-            if (n.StartsWith("Fila_Mision") || n == "Text_MisionesCompletadas")
-                Destroy(child.gameObject);
-        }
+            DestroyImmediate(panelRT.GetChild(i).gameObject);
 
-        // ── Pestañas (pegadas arriba) ──
-        var tabBar = CrearContenedor(panelRT, "TabBar_Misiones", 0, -5, 1360, 55);
+        // 4. Boton cerrar (arriba-derecha)
+        var goCerrar = CrearBotonUI(panelRT, "Btn_CerrarMisiones_Dyn", "X", 0, 0, 60, 50);
+        var rtCerrar = goCerrar.GetComponent<RectTransform>();
+        rtCerrar.anchorMin = new Vector2(1, 1);
+        rtCerrar.anchorMax = new Vector2(1, 1);
+        rtCerrar.anchoredPosition = new Vector2(-40, -30);
+        goCerrar.GetComponent<Button>().onClick.AddListener(() => MostrarPantalla(Panel_Principal));
 
-        var goPorHacer = CrearBotonUI(tabBar, "Btn_TabPorHacer", "POR HACER", -185, 0, 360, 50);
+        // 5. Pestañas (arriba-centro)
+        var goPorHacer = CrearBotonUI(panelRT, "Btn_TabPorHacer", "POR HACER", 0, 0, 300, 50);
+        var rtPH = goPorHacer.GetComponent<RectTransform>();
+        rtPH.anchorMin = new Vector2(0.5f, 1);
+        rtPH.anchorMax = new Vector2(0.5f, 1);
+        rtPH.anchoredPosition = new Vector2(-160, -30);
         _btnTabPorHacer = goPorHacer.GetComponent<Button>();
         _txtTabPorHacer = goPorHacer.GetComponentInChildren<TextMeshProUGUI>();
 
-        var goCompletadas = CrearBotonUI(tabBar, "Btn_TabCompletadas", "COMPLETADAS", 185, 0, 360, 50);
+        var goCompletadas = CrearBotonUI(panelRT, "Btn_TabCompletadas", "COMPLETADAS", 0, 0, 300, 50);
+        var rtComp2 = goCompletadas.GetComponent<RectTransform>();
+        rtComp2.anchorMin = new Vector2(0.5f, 1);
+        rtComp2.anchorMax = new Vector2(0.5f, 1);
+        rtComp2.anchoredPosition = new Vector2(160, -30);
         _btnTabCompletadas = goCompletadas.GetComponent<Button>();
         _txtTabCompletadas = goCompletadas.GetComponentInChildren<TextMeshProUGUI>();
 
         _btnTabPorHacer.onClick.AddListener(() => CambiarTabMisiones(false));
         _btnTabCompletadas.onClick.AddListener(() => CambiarTabMisiones(true));
 
-        // ── Contenedor activas (justo debajo de tabs, margen minimo) ──
+        // 6. Contenedor activas (stretch, debajo de tabs)
         var goActivas = new GameObject("Contenedor_MisionesActivas", typeof(RectTransform), typeof(VerticalLayoutGroup));
         goActivas.transform.SetParent(panelRT, false);
         var rtActivas = goActivas.GetComponent<RectTransform>();
-        rtActivas.anchorMin = new Vector2(0, 0);
-        rtActivas.anchorMax = new Vector2(1, 1);
-        rtActivas.offsetMin = new Vector2(10, 10);   // margen inferior/izq minimo
-        rtActivas.offsetMax = new Vector2(-10, -65);  // justo debajo de tabs
+        rtActivas.anchorMin = Vector2.zero;
+        rtActivas.anchorMax = Vector2.one;
+        rtActivas.offsetMin = new Vector2(15, 15);
+        rtActivas.offsetMax = new Vector2(-15, -65);
         var vlgActivas = goActivas.GetComponent<VerticalLayoutGroup>();
         vlgActivas.spacing = 12;
+        vlgActivas.padding = new RectOffset(0, 0, 5, 5);
         vlgActivas.childForceExpandWidth = true;
         vlgActivas.childForceExpandHeight = false;
         vlgActivas.childControlWidth = true;
         vlgActivas.childControlHeight = false;
         _contenedorMisionesActivas = goActivas.transform;
 
-        // ── Contenedor completadas ──
+        // 7. Contenedor completadas (mismo layout)
         var goComp = new GameObject("Contenedor_MisionesCompletadas", typeof(RectTransform), typeof(VerticalLayoutGroup));
         goComp.transform.SetParent(panelRT, false);
         var rtComp = goComp.GetComponent<RectTransform>();
-        rtComp.anchorMin = new Vector2(0, 0);
-        rtComp.anchorMax = new Vector2(1, 1);
-        rtComp.offsetMin = new Vector2(10, 10);
-        rtComp.offsetMax = new Vector2(-10, -65);
+        rtComp.anchorMin = Vector2.zero;
+        rtComp.anchorMax = Vector2.one;
+        rtComp.offsetMin = new Vector2(15, 15);
+        rtComp.offsetMax = new Vector2(-15, -65);
         var vlgComp = goComp.GetComponent<VerticalLayoutGroup>();
         vlgComp.spacing = 10;
+        vlgComp.padding = new RectOffset(0, 0, 5, 5);
         vlgComp.childForceExpandWidth = true;
         vlgComp.childForceExpandHeight = false;
         vlgComp.childControlWidth = true;
@@ -896,6 +911,7 @@ public class UIManager : MonoBehaviour
         _contenedorMisionesCompletadas = goComp.transform;
 
         _misionesTabCompletadas = false;
+        CambiarTabMisiones(false);
     }
 
     void CambiarTabMisiones(bool completadas)
