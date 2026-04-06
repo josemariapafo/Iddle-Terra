@@ -14,6 +14,7 @@ namespace Terra.Systems
     {
         private readonly DefinicionSubMejoraCadena[] _definiciones;
         private EstadoJuego _estado;
+        private SistemaCodice _codice;
 
         // Era mínima por pilar (derivada de las definiciones)
         private readonly int[] _eraDesbloqueo = new int[4]; // indexado por TipoPilar
@@ -32,6 +33,8 @@ namespace Terra.Systems
                     : 99;
             }
         }
+
+        public void AsignarCodice(SistemaCodice codice) => _codice = codice;
 
         public void Inicializar() { }
 
@@ -58,7 +61,7 @@ namespace Terra.Systems
             var est = _estado.Cadenas[idSubMejora];
             if (!est.Desbloqueada || est.Nivel >= def.NivelMax) return false;
 
-            double coste = def.CosteEnNivel(est.Nivel);
+            double coste = def.CosteEnNivel(est.Nivel) * (1.0 - (_codice?.ReduccionCosteCadenas() ?? 0.0));
             if (_estado.EnergiaVital < coste) return false;
 
             _estado.EnergiaVital -= coste;
@@ -80,7 +83,7 @@ namespace Terra.Systems
             int comprados = 0;
             while (est.Nivel < def.NivelMax)
             {
-                double coste = def.CosteEnNivel(est.Nivel);
+                double coste = def.CosteEnNivel(est.Nivel) * (1.0 - (_codice?.ReduccionCosteCadenas() ?? 0.0));
                 if (_estado.EnergiaVital < coste) break;
 
                 _estado.EnergiaVital -= coste;
@@ -156,9 +159,10 @@ namespace Terra.Systems
         {
             if (!CadenaPilarDesbloqueada(pilar)) return double.MaxValue;
 
-            double gen  = CalcularCapEslabon(pilar, TipoEslabon.Generacion);
-            double proc = CalcularCapEslabon(pilar, TipoEslabon.Procesamiento);
-            double dist = CalcularCapEslabon(pilar, TipoEslabon.Distribucion);
+            double bonusCap = 1.0 + (_codice?.BonusCapCadena() ?? 0.0);
+            double gen  = CalcularCapEslabon(pilar, TipoEslabon.Generacion) * bonusCap;
+            double proc = CalcularCapEslabon(pilar, TipoEslabon.Procesamiento) * bonusCap;
+            double dist = CalcularCapEslabon(pilar, TipoEslabon.Distribucion) * bonusCap;
 
             return System.Math.Min(gen, System.Math.Min(proc, dist));
         }

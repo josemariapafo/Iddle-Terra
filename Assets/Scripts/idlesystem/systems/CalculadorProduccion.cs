@@ -17,6 +17,7 @@ namespace Terra.Systems
         private readonly DefinicionSinergia[] _todasSinergias;
         private readonly DefinicionNodo[] _todosNodos;
         private SistemaCadenas _cadenas;
+        private SistemaCodice _codice;
 
         public CalculadorProduccion(
             DefinicionMejora[] mejoras,
@@ -29,6 +30,7 @@ namespace Terra.Systems
         }
 
         public void AsignarCadenas(SistemaCadenas cadenas) => _cadenas = cadenas;
+        public void AsignarCodice(SistemaCodice codice) => _codice = codice;
 
         /// <summary>
         /// Calcula EV/s completo con todas las capas multiplicadoras.
@@ -46,8 +48,9 @@ namespace Terra.Systems
             double evento    = estado.MultiplicadorEvento;
             double racha     = estado.Racha.MultiplicadorRacha;
             double nocturno  = CalcularBonusNocturno();
+            double codice    = _codice?.MultiplicadorEV() ?? 1.0;
 
-            return base_ * sinergias * nodos * prestige * evento * racha * nocturno;
+            return base_ * sinergias * nodos * prestige * evento * racha * nocturno * codice;
         }
 
         /// <summary>
@@ -94,10 +97,11 @@ namespace Terra.Systems
         public double CalcularMultiplicadorSinergias(EstadoJuego estado)
         {
             double mult = 1.0;
+            double bonusCodice = _codice?.BonusSinergias() ?? 0.0;
 
             foreach (var def in _todasSinergias)
                 if (estado.SinergiaActiva(def.Id))
-                    mult *= def.Multiplicador;
+                    mult *= def.Multiplicador + bonusCodice;
 
             return mult;
         }
@@ -125,7 +129,12 @@ namespace Terra.Systems
         public double CalcularBonusNocturno()
         {
             int hora = DateTime.Now.Hour;
-            return (hora >= 22 || hora <= 6) ? 2.0 : 1.0;
+            if (hora >= 22 || hora <= 6)
+            {
+                double extra = _codice?.BonusNocturno() ?? 0.0;
+                return 2.0 + extra; // base x2 + códice extra
+            }
+            return 1.0;
         }
 
         /// <summary>
@@ -174,7 +183,10 @@ namespace Terra.Systems
         /// </summary>
         public double EstimarGananciaPrestige(TipoPrestige tipo, EstadoJuego estado)
         {
-            return CalcularGananciaPrestige(tipo, estado.EnergiaVital);
+            double ganancia = CalcularGananciaPrestige(tipo, estado.EnergiaVital);
+            if (tipo == TipoPrestige.Extincion)
+                ganancia *= 1.0 + (_codice?.BonusFosilesPrestige() ?? 0.0);
+            return Math.Floor(ganancia);
         }
 
         /// <summary>

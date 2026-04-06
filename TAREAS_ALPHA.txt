@@ -407,7 +407,7 @@ TAREA 15 - Catalogo del Codice Fosil [COMPLETADA]
 
 ------------------------------------------------------------------------
 
-TAREA 16 - Sistema del Codice
+TAREA 16 - Sistema del Codice [COMPLETADA]
   Prioridad: ALTA
   Depende de: T15
 

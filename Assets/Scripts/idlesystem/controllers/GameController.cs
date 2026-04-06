@@ -30,6 +30,7 @@ namespace Terra.Controllers
         public SistemaRacha Racha { get; private set; }
         public SistemaCadenas Cadenas { get; private set; }
         public SistemaMisiones Misiones { get; private set; }
+        public SistemaCodice Codice { get; private set; }
 
         // ── Sistemas privados ─────────────────────────────────────────────
         private CalculadorProduccion _calculador;
@@ -120,6 +121,7 @@ namespace Terra.Controllers
             var defLogros = CatalogoLogros.Crear();
             var defCadenas = CatalogoCadenas.Crear();
             var defMisiones = CatalogoMisiones.Crear();
+            var defCodice = CatalogoCodice.Crear();
 
             // 2. Crear estado
             Estado = new EstadoJuego();
@@ -140,6 +142,10 @@ namespace Terra.Controllers
             Estancamiento = new SistemaEstancamiento(Prestige);
             Racha = new SistemaRacha();
             Misiones = new SistemaMisiones(defMisiones, _calculador);
+            Codice = new SistemaCodice(defCodice);
+            _calculador.AsignarCodice(Codice);
+            Mejoras.AsignarCodice(Codice);
+            Cadenas.AsignarCodice(Codice);
             _offline = new SistemaOffline(_calculador);
             _guardado = new SistemaGuardado();
 
@@ -155,6 +161,7 @@ namespace Terra.Controllers
             Estancamiento.AsignarEstado(Estado);
             Racha.AsignarEstado(Estado);
             Misiones.AsignarEstado(Estado);
+            Codice.AsignarEstado(Estado);
             _offline.AsignarEstado(Estado);
 
             // 6. Suscribir a prestige para reconectar sistemas
@@ -248,6 +255,7 @@ namespace Terra.Controllers
         public bool ReclamarBonusDiario() => Racha.ReclamarBonusDiario();
         public bool ComprarSubMejoraCadena(string id) => Cadenas.ComprarNivel(id);
         public int ComprarSubMejoraCadenaMax(string id) => Cadenas.ComprarMax(id);
+        public bool ComprarNodoCodice(string id) => Codice.ComprarNodo(id);
 
         /// <summary>Aplica un multiplicador temporal de EV — usado por MeteoroManager.</summary>
         public void AplicarEventoTemporal(float multiplicador, float duracionSegundos)

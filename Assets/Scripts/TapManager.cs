@@ -130,8 +130,11 @@ public class TapManager : MonoBehaviour
 
         UIManager.Instance?.NotificarActividad();
 
-        double mult = _comboActivo ? multiplicadorCombo : 1.0;
-        double evExtra = gc.Estado.EVPorSegundo * segundosPorTap * mult;
+        double bonusTap = 1.0 + (gc.Codice?.BonusTap() ?? 0.0);
+        double multCombo = _comboActivo
+            ? multiplicadorCombo + (float)(gc.Codice?.MultiplicadorComboExtra() ?? 0.0)
+            : 1.0;
+        double evExtra = gc.Estado.EVPorSegundo * segundosPorTap * multCombo * bonusTap;
         gc.Estado.EnergiaVital += evExtra;
 
         Color color = _comboActivo ? colorComboActivo : colorTapNormal;
@@ -144,7 +147,9 @@ public class TapManager : MonoBehaviour
             _timerResetCombo = tiempoResetCombo;
             if (Panel_Combo != null) Panel_Combo.SetActive(true);
             ActualizarUICombo();
-            if (_tapsCombo >= tapsParaCombo) ActivarCombo();
+            int tapsNecesarios = tapsParaCombo - (gc.Codice?.ReduccionTapsCombo() ?? 0);
+            if (tapsNecesarios < 2) tapsNecesarios = 2; // mínimo 2 taps
+            if (_tapsCombo >= tapsNecesarios) ActivarCombo();
         }
     }
 
@@ -222,7 +227,8 @@ public class TapManager : MonoBehaviour
 
     void ActivarCombo()
     {
-        _comboActivo = true; _tiempoRestanteCombo = duracionCombo; _tapsCombo = 0;
+        float duracionExtra = GameController.Instance?.Codice?.DuracionComboExtra() ?? 0f;
+        _comboActivo = true; _tiempoRestanteCombo = duracionCombo + duracionExtra; _tapsCombo = 0;
         if (Panel_Combo != null) Panel_Combo.SetActive(false);
         if (Text_ComboActivo != null) Text_ComboActivo.gameObject.SetActive(true);
         ActualizarUIComboActivo();
@@ -237,16 +243,21 @@ public class TapManager : MonoBehaviour
 
     void ActualizarUICombo()
     {
+        int tapsNecesarios = tapsParaCombo - (GameController.Instance?.Codice?.ReduccionTapsCombo() ?? 0);
+        if (tapsNecesarios < 2) tapsNecesarios = 2;
         if (Slider_Combo != null)
-            Slider_Combo.value = tapsParaCombo > 0 ? (float)_tapsCombo / tapsParaCombo : 0;
+            Slider_Combo.value = tapsNecesarios > 0 ? (float)_tapsCombo / tapsNecesarios : 0;
         if (Text_ComboContador != null)
-            Text_ComboContador.text = _tapsCombo + " / " + tapsParaCombo;
+            Text_ComboContador.text = _tapsCombo + " / " + tapsNecesarios;
     }
 
     void ActualizarUIComboActivo()
     {
         if (Text_ComboActivo != null)
-            Text_ComboActivo.text = "COMBO x" + multiplicadorCombo.ToString("F0")
+        {
+            float multReal = multiplicadorCombo + (float)(GameController.Instance?.Codice?.MultiplicadorComboExtra() ?? 0.0);
+            Text_ComboActivo.text = "COMBO x" + multReal.ToString("F1")
                 + "  " + Mathf.CeilToInt(_tiempoRestanteCombo) + "s";
+        }
     }
 }

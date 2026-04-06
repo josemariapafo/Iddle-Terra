@@ -14,11 +14,21 @@ namespace Terra.Systems
     {
         private readonly DefinicionMejora[] _definiciones;
         private EstadoJuego _estado;
+        private SistemaCodice _codice;
 
         private static readonly int[] _nivelesHito = { 10, 25, 50, 100, 200, 500 };
 
         public SistemaMejoras(DefinicionMejora[] definiciones) =>
             _definiciones = definiciones;
+
+        public void AsignarCodice(SistemaCodice codice) => _codice = codice;
+
+        private double CosteConReduccion(DefinicionMejora def, int nivel)
+        {
+            double coste = def.CosteEnNivel(nivel);
+            double reduccion = _codice?.ReduccionCosteMejoras() ?? 0.0;
+            return coste * (1.0 - reduccion);
+        }
 
         public void Inicializar()
         {
@@ -48,7 +58,7 @@ namespace Terra.Systems
             if (def == null) return false;
 
             var est = _estado.Mejoras[idMejora];
-            double coste = def.CosteEnNivel(est.Nivel);
+            double coste = CosteConReduccion(def, est.Nivel);
 
             if (!est.Desbloqueada || est.Nivel >= def.NivelMax) return false;
             if (_estado.EnergiaVital < coste) return false;
@@ -73,7 +83,7 @@ namespace Terra.Systems
             int comprados = 0;
             while (comprados < cantidad && est.Nivel < def.NivelMax)
             {
-                double coste = def.CosteEnNivel(est.Nivel);
+                double coste = CosteConReduccion(def, est.Nivel);
                 if (_estado.EnergiaVital < coste) break;
 
                 _estado.EnergiaVital -= coste;
@@ -102,7 +112,7 @@ namespace Terra.Systems
             int comprados = 0;
             while (est.Nivel < def.NivelMax)
             {
-                double coste = def.CosteEnNivel(est.Nivel);
+                double coste = CosteConReduccion(def, est.Nivel);
                 if (_estado.EnergiaVital < coste) break;
 
                 _estado.EnergiaVital -= coste;

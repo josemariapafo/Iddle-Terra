@@ -269,7 +269,7 @@ namespace Terra.Systems
 
             if (tipo == TipoReset.Total)
             {
-                // BigBang: también resetear árbol y recursos
+                // BigBang: también resetear árbol, recursos y Códice Fósil
                 foreach (var est in _estado.Nodos.Values)
                 {
                     est.Nivel = 0;
@@ -279,6 +279,10 @@ namespace Terra.Systems
                 {
                     est.Cantidad = 0;
                     est.Desbloqueado = false;
+                }
+                foreach (var est in _estado.NodosCodice.Values)
+                {
+                    est.Nivel = 0;
                 }
             }
         }
