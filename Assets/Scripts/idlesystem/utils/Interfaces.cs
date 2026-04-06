@@ -32,7 +32,29 @@ namespace Terra.Core
 
     public enum TipoEvento { Positivo, Negativo, Neutral }
 
-    public enum TipoBonus { MultiplicadorEV, MultiplicadorPilar, RecursoExtra, DesbloqueoInstante }
+    public enum TipoBonus
+    {
+        // ── Existentes (árbol evolución, logros) ──
+        MultiplicadorEV, MultiplicadorPilar, RecursoExtra, DesbloqueoInstante,
+
+        // ── Códice Fósil: Abundancia ──
+        BonusNocturno,          // +X% producción nocturna extra
+        BonusSinergias,         // +X% multiplicador sinergias
+
+        // ── Códice Fósil: Eficiencia ──
+        ReduccionCosteMejoras,  // -X% coste mejoras
+        ReduccionCosteCadenas,  // -X% coste cadenas
+        NivelesGratisInicio,    // +N niveles gratis Era 1 tras prestige
+        BonusFosilesPrestige,   // +X% fósiles ganados en prestige
+        BonusCapCadena,         // +X% cap de cadenas
+
+        // ── Códice Fósil: Dominio ──
+        BonusTap,               // +X% poder de tap
+        ReduccionTapsCombo,     // -N taps para activar combo
+        DuracionCombo,          // +Xs duración combo
+        MultiplicadorCombo,     // +X multiplicador combo
+        AutoTap                 // auto-tap (N taps por activación)
+    }
 
     public enum TipoEslabon { Generacion, Procesamiento, Distribucion }
 

@@ -356,7 +356,7 @@ TAREA 13 - Desbloqueo progresivo de paneles
  BLOQUE 6: MEJORAS AL PRESTIGE
 ================================================================================
 
-TAREA 14 - Preview de prestige mejorado
+TAREA 14 - Preview de prestige mejorado [COMPLETADA]
   Prioridad: ALTA
   Depende de: Nada nuevo
 
@@ -375,33 +375,35 @@ TAREA 14 - Preview de prestige mejorado
  BLOQUE 7: CODICE FOSIL (arbol de gasto de prestige)
 ================================================================================
 
-TAREA 15 - Catalogo del Codice Fosil
+TAREA 15 - Catalogo del Codice Fosil [COMPLETADA]
   Prioridad: ALTA
   Depende de: T1
 
-  Crear CatalogoCodice.cs en idlesystem/data/Catalogos/:
-    ~25 nodos en 3 ramas:
+  Creado CatalogoCodice.cs en idlesystem/data/Catalogos/:
+    15 nodos en 3 ramas (simplificado de 25 para facilitar balance):
 
-    ABUNDANCIA (produccion):
-      - Raices Profundas: +15% EV/s por nivel (max 5, coste 3/6/12/24/48 fosiles)
-      - Fertilidad: +25% produccion pilares Tierra+Vida por nivel (max 3)
-      - Erupcion Perpetua: +40% produccion nocturna por nivel (max 3)
-      - Cascada Vital: x2 milestone bonus por nivel (max 2)
-      - Gaia Menor: +10% todas las sinergias por nivel (max 5)
+    ABUNDANCIA (produccion pasiva, 5 nodos):
+      - cf_a1 Raices Profundas: +10% EV/s por nivel (max 5, coste 3)
+      - cf_a2 Erupcion Perpetua: +25% nocturno por nivel (max 3, coste 6)
+      - cf_a3 Mareas Ancestrales: +8% sinergias por nivel (max 5, coste 10)
+      - cf_a4 Pulso Vital: +15% EV/s por nivel (max 3, coste 20)
+      - cf_a5 Gaia Menor: +20% EV/s por nivel (max 2, coste 35)
 
-    EFICIENCIA (economia):
-      - Memoria Geologica: -10% costes mejoras por nivel (max 5)
-      - Tectonica Acelerada: -15% costes cadenas por nivel (max 3)
-      - Erosion Rapida: +20% velocidad de desbloqueo cadenas por nivel (max 3)
-      - Salto Evolutivo: empezar con +2 niveles en mejoras Era 1 por nivel (max 3)
-      - Eco del Pasado: empezar con +50 cap en todos los eslabones por nivel (max 5)
+    EFICIENCIA (economia, 5 nodos):
+      - cf_e1 Memoria Geologica: -8% coste mejoras por nivel (max 5, coste 3)
+      - cf_e2 Tectonica Acelerada: -10% coste cadenas por nivel (max 3, coste 6)
+      - cf_e3 Erosion Rapida: +1 nivel gratis Era 1 tras prestige (max 3, coste 12)
+      - cf_e4 Sedimentacion: +15% fosiles en prestige por nivel (max 3, coste 18)
+      - cf_e5 Estratificacion: +15% cap cadenas por nivel (max 3, coste 30)
 
-    DOMINIO (activo/tap):
-      - Impacto Cosmico: +50% poder de tap por nivel (max 5)
-      - Combo Rapido: -1 tap para combo por nivel (max 2) [5->4->3 taps]
-      - Pulso Prolongado: +3s duracion combo por nivel (max 3) [10->13->16->19s]
-      - Auto-Tap: 1 tap automatico cada Xs por nivel (max 3) [5s->3s->1s]
-      - Resonancia: combo aplica x2.5 en vez de x2 por nivel (max 2) [x2->x2.5->x3]
+    DOMINIO (tap/activo, 5 nodos):
+      - cf_d1 Impacto Cosmico: +30% poder tap por nivel (max 5, coste 3)
+      - cf_d2 Combo Rapido: -1 tap para combo por nivel (max 2, coste 8)
+      - cf_d3 Pulso Prolongado: +3s duracion combo por nivel (max 3, coste 6)
+      - cf_d4 Resonancia: +0.25x multiplicador combo por nivel (max 2, coste 20)
+      - cf_d5 Auto-Impulso: auto-tap por nivel (max 3, coste 25)
+
+    TipoBonus extendido con 12 nuevos valores para cubrir todos los efectos.
 
 ------------------------------------------------------------------------
 
