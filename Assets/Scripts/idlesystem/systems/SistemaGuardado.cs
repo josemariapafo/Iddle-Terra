@@ -41,6 +41,8 @@ namespace Terra.Systems
             public string misionesActivas;
             // Misiones completadas: ids separados por |
             public string misionesCompletadas;
+            // Nodos Códice Fósil: id:nivel separados por |
+            public string nodosCodice;
             // Revelación progresiva
             public double evMaximoAlcanzado;
             public int eraMaximaAlcanzada;
@@ -106,6 +108,13 @@ namespace Terra.Systems
             foreach (var mc in estado.MisionesCompletadas)
                 partesCompletadas.Append($"{mc.Id}:{(mc.RecompensaRecogida ? 1 : 0)}|");
             datos.misionesCompletadas = partesCompletadas.ToString();
+
+            // Serializar nodos Códice Fósil
+            var partesCodice = new System.Text.StringBuilder();
+            foreach (var kv in estado.NodosCodice)
+                if (kv.Value.Nivel > 0)
+                    partesCodice.Append($"{kv.Key}:{kv.Value.Nivel}|");
+            datos.nodosCodice = partesCodice.ToString();
 
             // Revelación progresiva
             datos.evMaximoAlcanzado = estado.EVMaximoAlcanzado;
@@ -189,6 +198,18 @@ namespace Terra.Systems
                         string id = kv[0];
                         if (int.TryParse(kv[1], out int nivel) && estado.Cadenas.ContainsKey(id))
                             estado.Cadenas[id].Nivel = nivel;
+                    }
+
+                // Cargar nodos Códice Fósil
+                if (!string.IsNullOrEmpty(datos.nodosCodice))
+                    foreach (var parte in datos.nodosCodice.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(parte)) continue;
+                        var kv = parte.Split(':');
+                        if (kv.Length != 2) continue;
+                        string id = kv[0];
+                        if (int.TryParse(kv[1], out int nivel) && estado.NodosCodice.ContainsKey(id))
+                            estado.NodosCodice[id].Nivel = nivel;
                     }
 
                 // Cargar misiones completadas (id:recogida o solo id para compat)

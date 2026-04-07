@@ -107,6 +107,24 @@ public class UIManager : MonoBehaviour
     public Button Btn_ComprarNodo;
     public Button Btn_CerrarPopup;
 
+    // ── Panel Códice Fósil ──────────────────────────────────────────────
+    [Header("Codice Fosil")]
+    public GameObject Panel_Codice;
+    public Button Btn_AbrirCodice;
+    public Button Btn_CerrarCodice;
+    public Transform Contenedor_NodosCodice;
+    public GameObject Prefab_NodoCodice;
+    public TextMeshProUGUI Text_FosilesCodice;
+
+    [Header("Popup Nodo Codice")]
+    public GameObject Panel_PopupCodice;
+    public TextMeshProUGUI Text_PopupCodiceNombre;
+    public TextMeshProUGUI Text_PopupCodiceDescripcion;
+    public TextMeshProUGUI Text_PopupCodiceEfecto;
+    public TextMeshProUGUI Text_PopupCodiceCoste;
+    public Button Btn_ComprarNodoCodice;
+    public Button Btn_CerrarPopupCodice;
+
     // ── Panel Misiones ──────────────────────────────────────────────────
     [Header("Misiones")]
     public GameObject Panel_Misiones;
@@ -152,6 +170,9 @@ public class UIManager : MonoBehaviour
     private readonly List<(GameObject nodo, DefinicionNodo def)> _nodosActivos
         = new List<(GameObject, DefinicionNodo)>();
     private string _nodoSeleccionadoId;
+    private string _nodoCodiceSeleccionadoId;
+    private readonly List<(GameObject nodo, DefinicionNodoCodice def)> _nodosCodiceActivos
+        = new List<(GameObject, DefinicionNodoCodice)>();
     private float _timerBannerMision = 0f;
     private const float DURACION_BANNER_MISION = 3f;
 
@@ -179,6 +200,11 @@ public class UIManager : MonoBehaviour
     static readonly string[] _nombresPilar = { "ATMOSFERA", "OCEANOS", "TIERRA", "VIDA" };
     static readonly string[] _eslabonNombres = { "Generación", "Procesamiento", "Distribución" };
 
+    // ─── DEBUG/TESTEO ────────────────────────────────────────────────────
+    // TODO: Poner a false antes del release.
+    // Activa hotkeys de testeo: F2 = +100 fosiles, F3 = +1000 EV.
+    private const bool DEBUG_HOTKEYS_TESTEO = true;
+
     // ══════════════════════════════════════════════════════════════════════
     void Awake()
     {
@@ -188,6 +214,7 @@ public class UIManager : MonoBehaviour
 
     void Start()
     {
+        ConstruirUICodiceProgramatico();
         ConfigurarBotones();
         SuscribirEventos();
         InicializarPanelMisiones();
@@ -198,6 +225,31 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
+#pragma warning disable CS0162
+        // ─── DEBUG: F2 = +100 fosiles | F3 = +1000 EV ────────────────────
+        if (DEBUG_HOTKEYS_TESTEO)
+        {
+            if (Input.GetKeyDown(KeyCode.F2))
+            {
+                var gcDbg = GameController.Instance;
+                if (gcDbg != null)
+                {
+                    gcDbg.Estado.Prestige.Fosiles += 100;
+                    Debug.Log("[DEBUG] +100 Fosiles. Total: " + gcDbg.Estado.Prestige.Fosiles);
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                var gcDbg = GameController.Instance;
+                if (gcDbg != null)
+                {
+                    gcDbg.Estado.EnergiaVital += 1000;
+                    Debug.Log("[DEBUG] +1000 EV. Total: " + gcDbg.Estado.EnergiaVital);
+                }
+            }
+        }
+#pragma warning restore CS0162
+
         _timerUI -= Time.deltaTime;
         if (_timerUI > 0) return;
         _timerUI = INTERVALO_UI;
@@ -209,6 +261,8 @@ public class UIManager : MonoBehaviour
         }
         if (Panel_Prestige != null && Panel_Prestige.activeSelf)
             ActualizarPrestige();
+        if (Panel_Codice != null && Panel_Codice.activeSelf)
+            ActualizarNodosCodice();
         if (Panel_Evolucion != null && Panel_Evolucion.activeSelf)
             ActualizarNodosArbol();
         if (Panel_Misiones != null && Panel_Misiones.activeSelf)
@@ -244,6 +298,10 @@ public class UIManager : MonoBehaviour
         Btn_CerrarMeta?.onClick.AddListener(CerrarMetaManual);
         Btn_AbrirPrestige?.onClick.AddListener(() => MostrarPantalla(Panel_Prestige));
         Btn_CerrarPrestige?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+        Btn_AbrirCodice?.onClick.AddListener(() => AbrirCodice());
+        Btn_CerrarCodice?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+        Btn_ComprarNodoCodice?.onClick.AddListener(OnClickComprarNodoCodice);
+        Btn_CerrarPopupCodice?.onClick.AddListener(() => Panel_PopupCodice?.SetActive(false));
 
         Btn_Extincion?.onClick.AddListener(() => OnClickPrestige(TipoPrestige.Extincion));
         Btn_Glaciacion?.onClick.AddListener(() => OnClickPrestige(TipoPrestige.Glaciacion));
@@ -370,6 +428,10 @@ public class UIManager : MonoBehaviour
         SetVisible(Btn_AbrirEvolucion, eraMax >= 2);
         SetVisible(Btn_AbrirMisiones, eraMax >= 2);
         SetVisible(Btn_AbrirPrestige, eraMax >= 3);
+        // Códice visible tras primer prestige (tiene fósiles)
+        var gc2 = GameController.Instance;
+        bool tienePrestige = gc2 != null && gc2.Estado.Prestige.VecesTotales > 0;
+        SetVisible(Btn_AbrirCodice, tienePrestige);
     }
 
     void ActualizarRevelacionProgresiva(GameController gc, EstadoJuego estado)
@@ -397,6 +459,13 @@ public class UIManager : MonoBehaviour
             }
 
             _eraMaxVisualAnterior = eraMax;
+        }
+
+        // Codice Fosil: revelar cuando el jugador hace su primer prestige
+        if (Btn_AbrirCodice != null && !Btn_AbrirCodice.gameObject.activeSelf
+            && estado.Prestige.VecesTotales > 0)
+        {
+            Revelar(Btn_AbrirCodice, "Codice Fosil");
         }
 
         // Interactividad de pilares visibles (gris si cadena no desbloqueada aún en esta run)
@@ -1480,6 +1549,387 @@ public class UIManager : MonoBehaviour
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // PANEL CÓDICE FÓSIL
+    // ══════════════════════════════════════════════════════════════════════
+
+    static readonly string[] _ramaNombres = { "ABUNDANCIA", "EFICIENCIA", "DOMINIO" };
+    static readonly Color _colorCodiceAbundancia = new Color(0.3f, 0.8f, 0.3f);
+    static readonly Color _colorCodiceEficiencia = new Color(0.3f, 0.6f, 0.9f);
+    static readonly Color _colorCodiceDominio    = new Color(0.9f, 0.5f, 0.2f);
+
+    /// <summary>
+    /// Construye toda la UI del Códice Fósil programáticamente.
+    /// Si Panel_Codice ya está asignado en Inspector, no hace nada (modo manual).
+    /// Pensado para testear sin tener que cablear todo en Unity.
+    /// </summary>
+    void ConstruirUICodiceProgramatico()
+    {
+        if (Panel_Codice != null) return;
+
+        // Buscar canvas raíz a partir de un panel ya wireado en Inspector
+        Transform canvasRoot = null;
+        if (Panel_Prestige != null) canvasRoot = Panel_Prestige.transform.parent;
+        else if (Panel_Principal != null) canvasRoot = Panel_Principal.transform.parent;
+        if (canvasRoot == null)
+        {
+            var canvas = GameObject.FindObjectOfType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UIManager] No se encontro Canvas para construir UI Codice");
+                return;
+            }
+            canvasRoot = canvas.transform;
+        }
+
+        // ───── PANEL CODICE (pantalla completa) ─────
+        Panel_Codice = new GameObject("Panel_Codice_Dyn",
+            typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        Panel_Codice.transform.SetParent(canvasRoot, false);
+        var rtCodice = Panel_Codice.GetComponent<RectTransform>();
+        rtCodice.anchorMin = Vector2.zero;
+        rtCodice.anchorMax = Vector2.one;
+        rtCodice.offsetMin = Vector2.zero;
+        rtCodice.offsetMax = Vector2.zero;
+        Panel_Codice.GetComponent<Image>().color = new Color(0.08f, 0.08f, 0.12f, 0.95f);
+
+        // Título
+        var goTitulo = CrearTextoUI(Panel_Codice.transform, "Text_TituloCodice", "<b>CODICE FOSIL</b>", 36);
+        var rtTit = goTitulo.GetComponent<RectTransform>();
+        rtTit.anchorMin = new Vector2(0.5f, 1);
+        rtTit.anchorMax = new Vector2(0.5f, 1);
+        rtTit.anchoredPosition = new Vector2(0, -40);
+        rtTit.sizeDelta = new Vector2(500, 50);
+        goTitulo.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+
+        // Contador de fósiles
+        var goFosiles = CrearTextoUI(Panel_Codice.transform, "Text_FosilesCodice", "Fosiles: 0", 24);
+        var rtFos = goFosiles.GetComponent<RectTransform>();
+        rtFos.anchorMin = new Vector2(0.5f, 1);
+        rtFos.anchorMax = new Vector2(0.5f, 1);
+        rtFos.anchoredPosition = new Vector2(0, -85);
+        rtFos.sizeDelta = new Vector2(400, 35);
+        var tmpFos = goFosiles.GetComponent<TextMeshProUGUI>();
+        tmpFos.alignment = TextAlignmentOptions.Center;
+        tmpFos.color = new Color(1f, 0.85f, 0.4f);
+        Text_FosilesCodice = tmpFos;
+
+        // Botón cerrar (esquina arriba-derecha)
+        var goCerrar = CrearBotonUI(Panel_Codice.transform, "Btn_CerrarCodice_Dyn", "X", 0, 0, 60, 50);
+        var rtCer = goCerrar.GetComponent<RectTransform>();
+        rtCer.anchorMin = new Vector2(1, 1);
+        rtCer.anchorMax = new Vector2(1, 1);
+        rtCer.anchoredPosition = new Vector2(-40, -30);
+        Btn_CerrarCodice = goCerrar.GetComponent<Button>();
+
+        // Contenedor de nodos (Grid: 5 columnas x 3 ramas)
+        var goGrid = new GameObject("Contenedor_NodosCodice", typeof(RectTransform), typeof(GridLayoutGroup));
+        goGrid.transform.SetParent(Panel_Codice.transform, false);
+        var rtGrid = goGrid.GetComponent<RectTransform>();
+        rtGrid.anchorMin = new Vector2(0, 0);
+        rtGrid.anchorMax = new Vector2(1, 1);
+        rtGrid.offsetMin = new Vector2(60, 60);
+        rtGrid.offsetMax = new Vector2(-60, -130);
+        var grid = goGrid.GetComponent<GridLayoutGroup>();
+        grid.cellSize = new Vector2(180, 100);
+        grid.spacing = new Vector2(15, 15);
+        grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+        grid.childAlignment = TextAnchor.UpperCenter;
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 5;
+        Contenedor_NodosCodice = goGrid.transform;
+
+        // Template del nodo (inactivo, usado como prefab por GenerarNodosCodice)
+        var goTemplate = new GameObject("NodoCodice_Template",
+            typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        goTemplate.transform.SetParent(Panel_Codice.transform, false);
+        goTemplate.GetComponent<RectTransform>().sizeDelta = new Vector2(180, 100);
+        goTemplate.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.4f);
+        var goTplTxt = CrearTextoUI(goTemplate.transform, "Text", "Nodo", 14);
+        var rtTplTxt = goTplTxt.GetComponent<RectTransform>();
+        rtTplTxt.anchorMin = Vector2.zero;
+        rtTplTxt.anchorMax = Vector2.one;
+        rtTplTxt.offsetMin = new Vector2(4, 4);
+        rtTplTxt.offsetMax = new Vector2(-4, -4);
+        goTplTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+        goTemplate.GetComponent<Button>().targetGraphic = goTemplate.GetComponent<Image>();
+        goTemplate.SetActive(false);
+        Prefab_NodoCodice = goTemplate;
+
+        // ───── PANEL POPUP CODICE (modal) ─────
+        Panel_PopupCodice = new GameObject("Panel_PopupCodice_Dyn",
+            typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(VerticalLayoutGroup));
+        Panel_PopupCodice.transform.SetParent(canvasRoot, false);
+        var rtPopup = Panel_PopupCodice.GetComponent<RectTransform>();
+        rtPopup.anchorMin = new Vector2(0.5f, 0.5f);
+        rtPopup.anchorMax = new Vector2(0.5f, 0.5f);
+        rtPopup.anchoredPosition = Vector2.zero;
+        rtPopup.sizeDelta = new Vector2(550, 420);
+        Panel_PopupCodice.GetComponent<Image>().color = new Color(0.12f, 0.12f, 0.18f, 0.98f);
+        var vlgPopup = Panel_PopupCodice.GetComponent<VerticalLayoutGroup>();
+        vlgPopup.padding = new RectOffset(25, 25, 25, 25);
+        vlgPopup.spacing = 12;
+        vlgPopup.childForceExpandWidth = true;
+        vlgPopup.childForceExpandHeight = false;
+        vlgPopup.childControlWidth = true;
+        vlgPopup.childControlHeight = false;
+
+        var goPopNombre = CrearTextoUI(Panel_PopupCodice.transform, "Text_PopupCodiceNombre",
+            "Nombre del nodo", 26);
+        goPopNombre.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
+        var tmpPopNom = goPopNombre.GetComponent<TextMeshProUGUI>();
+        tmpPopNom.alignment = TextAlignmentOptions.Center;
+        tmpPopNom.fontStyle = FontStyles.Bold;
+        Text_PopupCodiceNombre = tmpPopNom;
+
+        var goPopDesc = CrearTextoUI(Panel_PopupCodice.transform, "Text_PopupCodiceDescripcion",
+            "Descripcion", 18);
+        goPopDesc.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 80);
+        var tmpPopDesc = goPopDesc.GetComponent<TextMeshProUGUI>();
+        tmpPopDesc.alignment = TextAlignmentOptions.Center;
+        tmpPopDesc.color = new Color(0.85f, 0.85f, 0.85f);
+        Text_PopupCodiceDescripcion = tmpPopDesc;
+
+        var goPopEf = CrearTextoUI(Panel_PopupCodice.transform, "Text_PopupCodiceEfecto",
+            "Efecto: -", 20);
+        goPopEf.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
+        var tmpPopEf = goPopEf.GetComponent<TextMeshProUGUI>();
+        tmpPopEf.alignment = TextAlignmentOptions.Center;
+        tmpPopEf.color = new Color(0.4f, 1f, 0.4f);
+        Text_PopupCodiceEfecto = tmpPopEf;
+
+        var goPopCo = CrearTextoUI(Panel_PopupCodice.transform, "Text_PopupCodiceCoste",
+            "Coste: -", 18);
+        goPopCo.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 32);
+        var tmpPopCo = goPopCo.GetComponent<TextMeshProUGUI>();
+        tmpPopCo.alignment = TextAlignmentOptions.Center;
+        tmpPopCo.color = new Color(1f, 0.85f, 0.4f);
+        Text_PopupCodiceCoste = tmpPopCo;
+
+        // Fila de botones (comprar / cerrar)
+        var goBotones = new GameObject("ContenedorBotonesPopup",
+            typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        goBotones.transform.SetParent(Panel_PopupCodice.transform, false);
+        goBotones.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 65);
+        var hlgBot = goBotones.GetComponent<HorizontalLayoutGroup>();
+        hlgBot.spacing = 20;
+        hlgBot.childForceExpandWidth = true;
+        hlgBot.childForceExpandHeight = true;
+        hlgBot.childControlWidth = true;
+        hlgBot.childControlHeight = true;
+        hlgBot.padding = new RectOffset(20, 20, 5, 5);
+
+        var goCompr = CrearBotonUI(goBotones.transform, "Btn_ComprarNodoCodice_Dyn", "COMPRAR", 0, 0, 0, 0);
+        goCompr.GetComponent<Image>().color = new Color(0.2f, 0.55f, 0.2f);
+        Btn_ComprarNodoCodice = goCompr.GetComponent<Button>();
+
+        var goCerrarP = CrearBotonUI(goBotones.transform, "Btn_CerrarPopupCodice_Dyn", "CERRAR", 0, 0, 0, 0);
+        goCerrarP.GetComponent<Image>().color = new Color(0.45f, 0.25f, 0.25f);
+        Btn_CerrarPopupCodice = goCerrarP.GetComponent<Button>();
+
+        Panel_PopupCodice.SetActive(false);
+
+        // ───── BOTÓN ABRIR CODICE ─────
+        // Va en el HUD principal, junto a los botones Evolucion/Misiones.
+        // Replica el layout de Btn_AbrirEvolucion (mismo padre, mismos anchors)
+        // y se posiciona con un offset vertical para quedar debajo.
+        if (Btn_AbrirCodice == null && Btn_AbrirEvolucion != null)
+        {
+            var rtRef = Btn_AbrirEvolucion.GetComponent<RectTransform>();
+            var goAbrir = CrearBotonUI(Btn_AbrirEvolucion.transform.parent,
+                "Btn_AbrirCodice_Dyn", "CODICE FOSIL", 0, 0, rtRef.sizeDelta.x, rtRef.sizeDelta.y);
+            var rtAbrir = goAbrir.GetComponent<RectTransform>();
+            rtAbrir.anchorMin = rtRef.anchorMin;
+            rtAbrir.anchorMax = rtRef.anchorMax;
+            rtAbrir.pivot     = rtRef.pivot;
+            // Pegar debajo del de Evolucion (o de Misiones si está más abajo)
+            float yMasBajo = rtRef.anchoredPosition.y;
+            if (Btn_AbrirMisiones != null)
+            {
+                var rtMis = Btn_AbrirMisiones.GetComponent<RectTransform>();
+                if (rtMis.anchoredPosition.y < yMasBajo) yMasBajo = rtMis.anchoredPosition.y;
+            }
+            rtAbrir.anchoredPosition = new Vector2(rtRef.anchoredPosition.x,
+                yMasBajo - rtRef.sizeDelta.y - 10);
+            goAbrir.GetComponent<Image>().color = new Color(0.5f, 0.3f, 0.6f);
+            Btn_AbrirCodice = goAbrir.GetComponent<Button>();
+        }
+
+        Panel_Codice.SetActive(false);
+
+        Debug.Log("[UIManager] UI Codice construida programaticamente");
+    }
+
+    void AbrirCodice()
+    {
+        GenerarNodosCodice();
+        MostrarPantalla(Panel_Codice);
+    }
+
+    void GenerarNodosCodice()
+    {
+        _nodosCodiceActivos.Clear();
+        if (Contenedor_NodosCodice == null || Prefab_NodoCodice == null) return;
+
+        foreach (Transform hijo in Contenedor_NodosCodice)
+            Destroy(hijo.gameObject);
+
+        var gc = GameController.Instance;
+        if (gc?.Codice == null) return;
+
+        foreach (var def in gc.Codice.ObtenerDefiniciones())
+        {
+            var nodoGO = Instantiate(Prefab_NodoCodice, Contenedor_NodosCodice);
+            nodoGO.SetActive(true);  // El template está inactivo, los clones deben activarse
+            RellenarNodoCodice(nodoGO, def);
+            _nodosCodiceActivos.Add((nodoGO, def));
+        }
+    }
+
+    void RellenarNodoCodice(GameObject nodoGO, DefinicionNodoCodice def)
+    {
+        var gc = GameController.Instance;
+        if (gc?.Codice == null) return;
+
+        int nivel = gc.Codice.NivelNodo(def.Id);
+        bool nivelMax = nivel >= def.NivelMax;
+        bool desbloqueado = gc.Codice.PrerequisitoCumplido(def);
+        bool comprado = nivel > 0;
+
+        // Color de rama + estado
+        Color colorRama = def.Rama switch
+        {
+            TipoCodice.Abundancia => _colorCodiceAbundancia,
+            TipoCodice.Eficiencia => _colorCodiceEficiencia,
+            TipoCodice.Dominio    => _colorCodiceDominio,
+            _ => Color.white
+        };
+
+        Color color;
+        if (nivelMax) color = colorRama;
+        else if (comprado) color = Color.Lerp(colorRama, Color.white, 0.3f);
+        else if (desbloqueado) color = Color.Lerp(colorRama, Color.white, 0.6f);
+        else color = _colorBloqueado;
+
+        var img = nodoGO.GetComponent<Image>();
+        if (img != null) img.color = color;
+
+        // Texto
+        var txt = nodoGO.GetComponentInChildren<TextMeshProUGUI>();
+        if (txt != null)
+        {
+            if (!desbloqueado)
+                txt.text = "?\n<size=60%>Bloqueado</size>";
+            else if (nivelMax)
+                txt.text = def.Nombre + "\n<size=60%>MAX</size>";
+            else
+                txt.text = def.Nombre + "\n<size=60%>Nv " + nivel + "/" + def.NivelMax + "</size>";
+        }
+
+        // Click → popup
+        var btn = nodoGO.GetComponent<Button>();
+        if (btn != null)
+        {
+            btn.onClick.RemoveAllListeners();
+            var defC = def;
+            btn.onClick.AddListener(() => MostrarPopupCodice(defC));
+            btn.interactable = desbloqueado;
+        }
+    }
+
+    void MostrarPopupCodice(DefinicionNodoCodice def)
+    {
+        var gc = GameController.Instance;
+        if (gc?.Codice == null || Panel_PopupCodice == null) return;
+
+        _nodoCodiceSeleccionadoId = def.Id;
+        int nivel = gc.Codice.NivelNodo(def.Id);
+        bool nivelMax = nivel >= def.NivelMax;
+
+        if (Text_PopupCodiceNombre != null)
+            Text_PopupCodiceNombre.text = def.Nombre
+                + (nivelMax ? "  [MAX]" : "  Nv " + nivel + "/" + def.NivelMax);
+
+        if (Text_PopupCodiceDescripcion != null)
+            Text_PopupCodiceDescripcion.text = def.Descripcion;
+
+        if (Text_PopupCodiceEfecto != null)
+        {
+            double valorActual = nivel * def.ValorBonusPorNivel;
+            double valorSiguiente = (nivel + 1) * def.ValorBonusPorNivel;
+            string formato = FormatearBonusCodice(def, valorActual);
+            string formatoSig = FormatearBonusCodice(def, valorSiguiente);
+            Text_PopupCodiceEfecto.text = nivelMax
+                ? "Efecto: " + formato
+                : "Efecto: " + formato + " → " + formatoSig;
+        }
+
+        if (Text_PopupCodiceCoste != null)
+            Text_PopupCodiceCoste.text = nivelMax
+                ? "Completado"
+                : "Coste: " + Formateador.Numero(def.CosteEnNivel(nivel)) + " Fosiles";
+
+        if (Btn_ComprarNodoCodice != null)
+        {
+            Btn_ComprarNodoCodice.interactable = !nivelMax && gc.Codice.PuedeComprar(def.Id);
+            var txtBtn = Btn_ComprarNodoCodice.GetComponentInChildren<TextMeshProUGUI>();
+            if (txtBtn != null) txtBtn.text = nivelMax ? "MAX" : "COMPRAR";
+        }
+
+        Panel_PopupCodice.SetActive(true);
+    }
+
+    string FormatearBonusCodice(DefinicionNodoCodice def, double valor)
+    {
+        return def.TipoBonus switch
+        {
+            TipoBonus.MultiplicadorEV     => "+" + (valor * 100).ToString("F0") + "% EV/s",
+            TipoBonus.BonusNocturno       => "+" + (valor * 100).ToString("F0") + "% nocturno",
+            TipoBonus.BonusSinergias      => "+" + (valor * 100).ToString("F0") + "% sinergias",
+            TipoBonus.ReduccionCosteMejoras => "-" + (valor * 100).ToString("F0") + "% coste mejoras",
+            TipoBonus.ReduccionCosteCadenas => "-" + (valor * 100).ToString("F0") + "% coste cadenas",
+            TipoBonus.NivelesGratisInicio  => "+" + valor.ToString("F0") + " niveles gratis",
+            TipoBonus.BonusFosilesPrestige => "+" + (valor * 100).ToString("F0") + "% fosiles",
+            TipoBonus.BonusCapCadena       => "+" + (valor * 100).ToString("F0") + "% cap cadenas",
+            TipoBonus.BonusTap             => "+" + (valor * 100).ToString("F0") + "% tap",
+            TipoBonus.ReduccionTapsCombo   => "-" + valor.ToString("F0") + " taps combo",
+            TipoBonus.DuracionCombo        => "+" + valor.ToString("F0") + "s combo",
+            TipoBonus.MultiplicadorCombo   => "+" + valor.ToString("F2") + "x combo",
+            TipoBonus.AutoTap              => valor.ToString("F0") + " auto-taps",
+            _ => "+" + valor.ToString("F2")
+        };
+    }
+
+    void OnClickComprarNodoCodice()
+    {
+        if (string.IsNullOrEmpty(_nodoCodiceSeleccionadoId)) return;
+        var gc = GameController.Instance;
+        if (gc?.Codice == null) return;
+
+        gc.ComprarNodoCodice(_nodoCodiceSeleccionadoId);
+
+        var def = gc.Codice.BuscarDefinicion(_nodoCodiceSeleccionadoId);
+        if (def != null) MostrarPopupCodice(def);
+        ActualizarNodosCodice();
+    }
+
+    void ActualizarNodosCodice()
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return;
+
+        // Actualizar contador de fósiles
+        if (Text_FosilesCodice != null)
+            Text_FosilesCodice.text = "Fosiles: " + Formateador.Numero(gc.Estado.Prestige.Fosiles);
+
+        foreach (var (nodoGO, def) in _nodosCodiceActivos)
+        {
+            if (nodoGO == null) continue;
+            RellenarNodoCodice(nodoGO, def);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // PANEL PRESTIGE
     // ══════════════════════════════════════════════════════════════════════
 
@@ -1829,7 +2279,9 @@ public class UIManager : MonoBehaviour
         Panel_Prestige?.SetActive(pantalla == Panel_Prestige);
         Panel_Evolucion?.SetActive(pantalla == Panel_Evolucion);
         Panel_Misiones?.SetActive(pantalla == Panel_Misiones);
+        Panel_Codice?.SetActive(pantalla == Panel_Codice);
         Panel_PopupNodo?.SetActive(false);
+        Panel_PopupCodice?.SetActive(false);
         // Evento y EraDesbloqueada se manejan como overlays, no cierran el resto
     }
 }

@@ -437,7 +437,7 @@ TAREA 16 - Sistema del Codice [COMPLETADA]
 
 ------------------------------------------------------------------------
 
-TAREA 17 - Guardar + UI del Codice
+TAREA 17 - Guardar + UI del Codice [COMPLETADA]
   Prioridad: ALTA
   Depende de: T16
 
