@@ -240,6 +240,10 @@ namespace Terra.State
         public Dictionary<TipoPilar, int> Bifurcaciones
             = new Dictionary<TipoPilar, int>();
 
+        // Automatizaciones (T18). Indexado por (int)TipoAutomatizacion.
+        // El desbloqueo se infiere del nivel del nodo correspondiente (nd_33..nd_37).
+        public bool[] AutomatizacionesActivas = new bool[5];
+
         // UI - desbloqueos progresivos (nunca se resetean con prestige)
         public double EVMaximoAlcanzado;
         public int EraMaximaAlcanzada = 1;

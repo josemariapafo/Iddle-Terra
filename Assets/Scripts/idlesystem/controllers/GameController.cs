@@ -31,6 +31,7 @@ namespace Terra.Controllers
         public SistemaCadenas Cadenas { get; private set; }
         public SistemaMisiones Misiones { get; private set; }
         public SistemaCodice Codice { get; private set; }
+        public SistemaAutomatizacion Automatizacion { get; private set; }
 
         // ── Sistemas privados ─────────────────────────────────────────────
         private CalculadorProduccion _calculador;
@@ -146,6 +147,7 @@ namespace Terra.Controllers
             _calculador.AsignarCodice(Codice);
             Mejoras.AsignarCodice(Codice);
             Cadenas.AsignarCodice(Codice);
+            Automatizacion = new SistemaAutomatizacion(Mejoras);
             _offline = new SistemaOffline(_calculador);
             _guardado = new SistemaGuardado();
 
@@ -162,10 +164,12 @@ namespace Terra.Controllers
             Racha.AsignarEstado(Estado);
             Misiones.AsignarEstado(Estado);
             Codice.AsignarEstado(Estado);
+            Automatizacion.AsignarEstado(Estado);
             _offline.AsignarEstado(Estado);
 
-            // 6. Suscribir a prestige para reconectar sistemas
+            // 6. Suscribir a prestige y avance de era para reconectar sistemas
             EventBus.Suscribir<EventoPrestigeRealizado>(OnPrestigeRealizado);
+            EventBus.Suscribir<EventoEraAvanzada>(OnEraAvanzada);
         }
 
         private void OnPrestigeRealizado(EventoPrestigeRealizado evt)
@@ -176,6 +180,14 @@ namespace Terra.Controllers
             Sinergias.Comprobar();
             Arbol.ComprobarDesbloqueos();
             Estado.EVPorSegundo = _calculador.Calcular(Estado);
+        }
+
+        private void OnEraAvanzada(EventoEraAvanzada evt)
+        {
+            // Al avanzar de era, reevaluar desbloqueos dependientes del valor de era
+            Mejoras.ComprobarDesbloqueos();
+            Arbol.ComprobarDesbloqueos();
+            Sinergias.Comprobar();
         }
 
         private void CargarYCalcularOffline()
@@ -233,6 +245,7 @@ namespace Terra.Controllers
             Logros.Actualizar(delta);
             Estancamiento.Actualizar(delta);
             Misiones.Actualizar(delta);
+            Automatizacion.Actualizar(delta);
 
             // Publicar cambio de EV
             EventBus.Publicar(new EventoEVCambia(Estado.EnergiaVital));
@@ -256,6 +269,7 @@ namespace Terra.Controllers
         public bool ComprarSubMejoraCadena(string id) => Cadenas.ComprarNivel(id);
         public int ComprarSubMejoraCadenaMax(string id) => Cadenas.ComprarMax(id);
         public bool ComprarNodoCodice(string id) => Codice.ComprarNodo(id);
+        public void AlternarAutomatizacion(TipoAutomatizacion tipo) => Automatizacion.Alternar(tipo);
 
         /// <summary>Aplica un multiplicador temporal de EV — usado por MeteoroManager.</summary>
         public void AplicarEventoTemporal(float multiplicador, float duracionSegundos)

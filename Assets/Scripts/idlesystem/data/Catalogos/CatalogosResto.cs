@@ -121,6 +121,13 @@ namespace Terra.Data.Catalogos
             new DefinicionNodo("nd_30","Terraformación",        "×20 EV global",        8, new[]{"nd_29"},         1e12, TipoBonus.MultiplicadorEV,    TipoPilar.Tierra,  4.00),
             new DefinicionNodo("nd_31","Esfera de Dyson",       "×50 EV global",        8, new[]{"nd_30"},         5e12, TipoBonus.MultiplicadorEV,    TipoPilar.Atmosfera,5.00),
             new DefinicionNodo("nd_32","GAIA final",            "Condición fin de juego",8,new[]{"nd_31"},         10e12,TipoBonus.DesbloqueoInstante, TipoPilar.Vida,    10.00),
+
+            // ── Automatizaciones (T18) ──────────────────────────────────────
+            new DefinicionNodo("nd_33","Gravedad",              "Auto-compra Tierra",   3, new[]{"nd_02"},         500_000,    TipoBonus.DesbloqueoInstante, TipoPilar.Tierra,   0),
+            new DefinicionNodo("nd_34","Corrientes",            "Auto-compra Océanos",  3, new[]{"nd_04"},         500_000,    TipoBonus.DesbloqueoInstante, TipoPilar.Oceanos,  0),
+            new DefinicionNodo("nd_35","Viento",                "Auto-compra Atmósfera",3, new[]{"nd_03"},         500_000,    TipoBonus.DesbloqueoInstante, TipoPilar.Atmosfera,0),
+            new DefinicionNodo("nd_36","Evolución Natural",     "Auto-compra Vida",     3, new[]{"nd_01"},         500_000,    TipoBonus.DesbloqueoInstante, TipoPilar.Vida,     0),
+            new DefinicionNodo("nd_37","Selección Natural",     "Auto-compra inteligente",4,new[]{"nd_33","nd_34","nd_35","nd_36"},5_000_000,TipoBonus.DesbloqueoInstante,TipoPilar.Vida,0),
         };
     }
 

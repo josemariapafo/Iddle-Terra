@@ -43,6 +43,8 @@ namespace Terra.Systems
             public string misionesCompletadas;
             // Nodos Códice Fósil: id:nivel separados por |
             public string nodosCodice;
+            // Automatizaciones activas: "1|0|1|0|1" (5 flags)
+            public string automatizacionesActivas;
             // Revelación progresiva
             public double evMaximoAlcanzado;
             public int eraMaximaAlcanzada;
@@ -115,6 +117,18 @@ namespace Terra.Systems
                 if (kv.Value.Nivel > 0)
                     partesCodice.Append($"{kv.Key}:{kv.Value.Nivel}|");
             datos.nodosCodice = partesCodice.ToString();
+
+            // Serializar automatizaciones activas
+            if (estado.AutomatizacionesActivas != null)
+            {
+                var partesAuto = new System.Text.StringBuilder();
+                for (int i = 0; i < estado.AutomatizacionesActivas.Length; i++)
+                {
+                    if (i > 0) partesAuto.Append('|');
+                    partesAuto.Append(estado.AutomatizacionesActivas[i] ? '1' : '0');
+                }
+                datos.automatizacionesActivas = partesAuto.ToString();
+            }
 
             // Revelación progresiva
             datos.evMaximoAlcanzado = estado.EVMaximoAlcanzado;
@@ -211,6 +225,17 @@ namespace Terra.Systems
                         if (int.TryParse(kv[1], out int nivel) && estado.NodosCodice.ContainsKey(id))
                             estado.NodosCodice[id].Nivel = nivel;
                     }
+
+                // Cargar automatizaciones activas
+                if (!string.IsNullOrEmpty(datos.automatizacionesActivas))
+                {
+                    var partes = datos.automatizacionesActivas.Split('|');
+                    if (estado.AutomatizacionesActivas == null
+                        || estado.AutomatizacionesActivas.Length < partes.Length)
+                        estado.AutomatizacionesActivas = new bool[partes.Length];
+                    for (int i = 0; i < partes.Length && i < estado.AutomatizacionesActivas.Length; i++)
+                        estado.AutomatizacionesActivas[i] = partes[i] == "1";
+                }
 
                 // Cargar misiones completadas (id:recogida o solo id para compat)
                 if (!string.IsNullOrEmpty(datos.misionesCompletadas))

@@ -458,7 +458,7 @@ TAREA 17 - Guardar + UI del Codice [COMPLETADA]
  BLOQUE 8: AUTO-COMPRA
 ================================================================================
 
-TAREA 18 - Sistema de automatizacion
+TAREA 18 - Sistema de automatizacion [COMPLETADA]
   Prioridad: MEDIA
   Depende de: T9 (UI evolucion, para ver nodos de auto-compra)
 
@@ -480,7 +480,7 @@ TAREA 18 - Sistema de automatizacion
 
 ------------------------------------------------------------------------
 
-TAREA 19 - Guardar + UI auto-compra
+TAREA 19 - Guardar + UI auto-compra [COMPLETADA]
   Prioridad: MEDIA
   Depende de: T18
 

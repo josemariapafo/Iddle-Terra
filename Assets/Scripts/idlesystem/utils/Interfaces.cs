@@ -63,4 +63,18 @@ namespace Terra.Core
     public enum TipoRecompensa { EVInstante, MultiplicadorTemporal, NivelNodoGratis, FosilesExtra }
 
     public enum TipoCodice { Abundancia, Eficiencia, Dominio }
+
+    /// <summary>
+    /// Automatizaciones de compra. Cada una de pilar compra periódicamente la
+    /// mejora más barata desbloqueada del pilar asignado. SeleccionNatural es
+    /// "smart": elige globalmente la de mejor incremento_prod / coste.
+    /// </summary>
+    public enum TipoAutomatizacion
+    {
+        Gravedad         = 0, // Tierra
+        Corrientes       = 1, // Oceanos
+        Viento           = 2, // Atmosfera
+        EvolucionNatural = 3, // Vida
+        SeleccionNatural = 4  // Smart (global)
+    }
 }

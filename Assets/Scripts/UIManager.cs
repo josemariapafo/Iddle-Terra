@@ -189,6 +189,12 @@ public class UIManager : MonoBehaviour
     private TextMeshProUGUI _txtTabCompletadas;
     private TextMeshProUGUI _txtBadgeMisiones;
 
+    // ── Auto-compra (T19): toggles dinámicos en Panel_Categoria ──────
+    private Button _btnAutoCompra;
+    private TextMeshProUGUI _txtAutoCompra;
+    private Button _btnAutoCompraSmart;
+    private TextMeshProUGUI _txtAutoCompraSmart;
+
     static readonly string[][] _zonasNombres =
     {
         new[]{ "Baja atmosfera",  "Nubes",         "Alta atmosfera"  },
@@ -219,14 +225,39 @@ public class UIManager : MonoBehaviour
         SuscribirEventos();
         InicializarPanelMisiones();
         InicializarRevelacionProgresiva();
+        ArreglarLayoutPopupNodo();
         MostrarPantalla(Panel_Principal);
         ComprobarBonusDiario();
+    }
+
+    // Reorganiza los textos del Panel_PopupNodo en vertical. La escena tiene
+    // los 4 textos en fila con cajas de 200x50 y fuente 36 — no cabe casi nada,
+    // sobre todo la descripción. Se ajusta en runtime para no tocar la escena.
+    void ArreglarLayoutPopupNodo()
+    {
+        ReposicionarTextoPopup(Text_PopupNombre,      new Vector2(0,  140), new Vector2(700, 60), 30);
+        ReposicionarTextoPopup(Text_PopupDescripcion, new Vector2(0,   70), new Vector2(700, 60), 22);
+        ReposicionarTextoPopup(Text_PopupEfecto,      new Vector2(0,    0), new Vector2(700, 50), 22);
+        ReposicionarTextoPopup(Text_PopupCoste,       new Vector2(0,  -60), new Vector2(700, 50), 22);
+    }
+
+    void ReposicionarTextoPopup(TextMeshProUGUI txt, Vector2 pos, Vector2 size, float fontSize)
+    {
+        if (txt == null) return;
+        var rt = txt.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+        txt.fontSize = fontSize;
+        txt.alignment = TextAlignmentOptions.Center;
+        txt.enableWordWrapping = true;
     }
 
     void Update()
     {
 #pragma warning disable CS0162
-        // ─── DEBUG: F2 = +100 fosiles | F3 = +1000 EV ────────────────────
+        // ─── DEBUG: F2 = +100 fosiles | F3 = +10M EV ─────────────────────
         if (DEBUG_HOTKEYS_TESTEO)
         {
             if (Input.GetKeyDown(KeyCode.F2))
@@ -243,8 +274,8 @@ public class UIManager : MonoBehaviour
                 var gcDbg = GameController.Instance;
                 if (gcDbg != null)
                 {
-                    gcDbg.Estado.EnergiaVital += 1000;
-                    Debug.Log("[DEBUG] +1000 EV. Total: " + gcDbg.Estado.EnergiaVital);
+                    gcDbg.Estado.EnergiaVital += 10_000_000;
+                    Debug.Log("[DEBUG] +10M EV. Total: " + gcDbg.Estado.EnergiaVital);
                 }
             }
         }
@@ -511,8 +542,111 @@ public class UIManager : MonoBehaviour
         if (Btn_TabProduccion != null)
             Btn_TabProduccion.gameObject.SetActive(cadenaActiva);
 
+        ActualizarTogglesAutomatizacion(pilar);
+
         AplicarTab();
         MostrarPantalla(Panel_Categoria);
+    }
+
+    // ── Auto-compra (T19) ────────────────────────────────────────────────
+
+    private static readonly TipoAutomatizacion[] _automatPorPilar =
+    {
+        TipoAutomatizacion.Viento,           // Atmosfera
+        TipoAutomatizacion.Corrientes,       // Oceanos
+        TipoAutomatizacion.Gravedad,         // Tierra
+        TipoAutomatizacion.EvolucionNatural  // Vida
+    };
+
+    void ActualizarTogglesAutomatizacion(TipoPilar pilar)
+    {
+        var gc = GameController.Instance;
+        if (gc?.Automatizacion == null || Panel_Categoria == null) return;
+
+        // Crear toggles si no existen
+        if (_btnAutoCompra == null)
+        {
+            var go = CrearBotonUI(Panel_Categoria.transform, "Btn_AutoCompra_Dyn",
+                "AUTO", 0, 0, 200, 70);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1, 1);
+            rt.anchorMax = new Vector2(1, 1);
+            rt.pivot = new Vector2(1, 1);
+            rt.anchoredPosition = new Vector2(-20, -20);
+            _btnAutoCompra = go.GetComponent<Button>();
+            _txtAutoCompra = go.GetComponentInChildren<TextMeshProUGUI>();
+            _txtAutoCompra.fontSize = 26;
+            _txtAutoCompra.fontStyle = FontStyles.Bold;
+            _btnAutoCompra.onClick.AddListener(OnClickToggleAutoCompra);
+        }
+        if (_btnAutoCompraSmart == null)
+        {
+            var go = CrearBotonUI(Panel_Categoria.transform, "Btn_AutoCompraSmart_Dyn",
+                "SMART", 0, 0, 200, 70);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1, 1);
+            rt.anchorMax = new Vector2(1, 1);
+            rt.pivot = new Vector2(1, 1);
+            rt.anchoredPosition = new Vector2(-20, -100);
+            _btnAutoCompraSmart = go.GetComponent<Button>();
+            _txtAutoCompraSmart = go.GetComponentInChildren<TextMeshProUGUI>();
+            _txtAutoCompraSmart.fontSize = 26;
+            _txtAutoCompraSmart.fontStyle = FontStyles.Bold;
+            _btnAutoCompraSmart.onClick.AddListener(OnClickToggleAutoCompraSmart);
+        }
+
+        // Forzar que se dibujen por encima del resto (el panel puede añadir hijos después)
+        _btnAutoCompra.transform.SetAsLastSibling();
+        _btnAutoCompraSmart.transform.SetAsLastSibling();
+
+        // Toggle del pilar
+        var tipoPilarAuto = _automatPorPilar[(int)pilar];
+        bool desbloqueadoPilar = gc.Automatizacion.EstaDesbloqueada(tipoPilarAuto);
+        _btnAutoCompra.gameObject.SetActive(desbloqueadoPilar);
+        if (desbloqueadoPilar)
+            PintarToggleAutomat(_btnAutoCompra, _txtAutoCompra,
+                gc.Automatizacion.EstaActivada(tipoPilarAuto));
+
+        // Toggle smart (solo si nd_37 está comprado)
+        bool desbloqueadoSmart = gc.Automatizacion.EstaDesbloqueada(TipoAutomatizacion.SeleccionNatural);
+        _btnAutoCompraSmart.gameObject.SetActive(desbloqueadoSmart);
+        if (desbloqueadoSmart)
+            PintarToggleAutomat(_btnAutoCompraSmart, _txtAutoCompraSmart,
+                gc.Automatizacion.EstaActivada(TipoAutomatizacion.SeleccionNatural));
+    }
+
+    void PintarToggleAutomat(Button btn, TextMeshProUGUI txt, bool activa)
+    {
+        var img = btn.GetComponent<Image>();
+        if (img != null)
+            img.color = activa
+                ? new Color(0.30f, 0.85f, 0.40f, 1f)   // verde brillante = ON
+                : new Color(0.80f, 0.25f, 0.25f, 1f);  // rojo = OFF
+        if (txt != null)
+        {
+            string label = btn == _btnAutoCompraSmart ? "SMART" : "AUTO";
+            txt.text = activa ? label + ": ON" : label + ": OFF";
+            txt.color = Color.white;
+        }
+    }
+
+    void OnClickToggleAutoCompra()
+    {
+        var gc = GameController.Instance;
+        if (gc?.Automatizacion == null) return;
+        var tipo = _automatPorPilar[(int)_categoriaActual];
+        gc.AlternarAutomatizacion(tipo);
+        PintarToggleAutomat(_btnAutoCompra, _txtAutoCompra,
+            gc.Automatizacion.EstaActivada(tipo));
+    }
+
+    void OnClickToggleAutoCompraSmart()
+    {
+        var gc = GameController.Instance;
+        if (gc?.Automatizacion == null) return;
+        gc.AlternarAutomatizacion(TipoAutomatizacion.SeleccionNatural);
+        PintarToggleAutomat(_btnAutoCompraSmart, _txtAutoCompraSmart,
+            gc.Automatizacion.EstaActivada(TipoAutomatizacion.SeleccionNatural));
     }
 
     void CambiarTab(bool infraestructura)
