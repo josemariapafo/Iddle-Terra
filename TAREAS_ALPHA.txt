@@ -552,7 +552,7 @@ TAREA 21 - Bonus secundario por pilar [COMPLETADA]
  BLOQUE 11: DESAFIOS (Era 5)
 ================================================================================
 
-TAREA 22 - Catalogo de desafios
+TAREA 22 - Catalogo de desafios [COMPLETADA]
   Prioridad: MEDIA
   Depende de: T1
 

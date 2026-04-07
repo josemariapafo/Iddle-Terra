@@ -253,6 +253,20 @@ namespace Terra.State
         public float TiempoRestanteEvento = 0f;
         public string EventoActivoId = null;
 
+        // ── Desafíos (T22/T23) ─────────────────────────────────────────
+        // Desafío activo
+        public string DesafioActivoId = null;
+        public float TiempoRestanteDesafio = 0f;   // 0 = sin límite temporal
+        public int ComprasEnDesafio = 0;
+        // Multiplicador global acumulado por desafíos completados
+        public double BonusDesafiosCompletados = 1.0;
+        // Flags de restricción — los sistemas los consultan para bloquear acciones
+        public bool[] PilaresBloqueadosDesafio = new bool[4];
+        public bool CadenasBloqueadasDesafio = false;
+        public bool PrestigeBloqueadoDesafio = false;
+        public bool SoloZona0Desafio = false;
+        public int MaxComprasDesafio = 0;          // 0 = sin límite
+
         // Stats de sesión (no persistidos)
         [NonSerialized] public double EVGanadaEnSesion;
         [NonSerialized] public int MejorasCompradasEnSesion;

@@ -259,14 +259,14 @@ namespace Terra.Data
         public string ObjetivoDescripcion;
         public double BonusMultiplicador;
         public Func<EstadoSnapshot, bool> CondicionVictoria;
-        public Action<EstadoSnapshot> AplicarRestriccion;
+        public Action<Terra.State.EstadoJuego> AplicarRestriccion;
 
         public DefinicionDesafio(
             string id, string nombre, string desc,
             int era, string restriccion, string objetivo,
             double bonus,
             Func<EstadoSnapshot, bool> condVictoria,
-            Action<EstadoSnapshot> aplicarRestriccion)
+            Action<Terra.State.EstadoJuego> aplicarRestriccion)
         {
             Id = id; Nombre = nombre; Descripcion = desc;
             EraRequerida = era;
