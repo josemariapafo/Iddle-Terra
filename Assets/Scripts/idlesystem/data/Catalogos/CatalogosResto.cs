@@ -135,21 +135,149 @@ namespace Terra.Data.Catalogos
     {
         public static DefinicionEvento[] Crear() => new[]
         {
-            new DefinicionEvento("ev_01","Lluvia de meteoritos",  "Desvíalos con tu Atmósfera o pierde Vida",       TipoEvento.Negativo, 1, 3.0f, 30,  15, TipoPilar.Atmosfera, true),
-            new DefinicionEvento("ev_02","Erupción volcánica",    "Lava fertilizan la Tierra pero dañan la Vida",   TipoEvento.Neutral,  1, 2.0f, 60,  20, TipoPilar.Tierra,    false),
-            new DefinicionEvento("ev_03","Tormenta solar",        "Acepta: ×3 EV 30s. Rechaza: pierde Atmósfera",  TipoEvento.Neutral,  2, 3.0f, 30,  20, TipoPilar.Atmosfera, true),
-            new DefinicionEvento("ev_04","Florecimiento marino",  "+200% Vida durante 60s si Océanos > Lv20",       TipoEvento.Positivo, 3, 3.0f, 60,  15, TipoPilar.Oceanos,   false),
-            new DefinicionEvento("ev_05","Glaciación menor",      "Penaliza 30s pero da Fósiles extra al final",    TipoEvento.Negativo, 3, 0.5f, 30,  25, TipoPilar.Oceanos,   true),
-            new DefinicionEvento("ev_06","Supervolcán",           "×5 Tierra 60s pero bloquea Vida temporalmente",  TipoEvento.Neutral,  4, 5.0f, 60,  30, TipoPilar.Tierra,    true),
-            new DefinicionEvento("ev_07","Impacto asteroide",     "Gasta 50% de tu EV para ×10 durante 30s",        TipoEvento.Neutral,  4, 10.0f,30,  30, TipoPilar.Atmosfera, true),
-            new DefinicionEvento("ev_08","Explosión cámbrica",    "×4 Vida durante 90s — solo Era 3+",              TipoEvento.Positivo, 3, 4.0f, 90,  20, TipoPilar.Vida,      false),
-            new DefinicionEvento("ev_09","Corriente de El Niño",  "×2 Océanos + Tierra durante 60s",                TipoEvento.Positivo, 4, 2.0f, 60,  15, TipoPilar.Oceanos,   false),
-            new DefinicionEvento("ev_10","Plaga",                 "Penaliza Vida 50% durante 30s",                  TipoEvento.Negativo, 5, 0.5f, 30,  20, TipoPilar.Vida,      true),
-            new DefinicionEvento("ev_11","Descubrimiento fósil",  "+500 Fósiles extra si prestige activo",          TipoEvento.Positivo, 5, 1.0f, 5,   15, TipoPilar.Tierra,    false),
-            new DefinicionEvento("ev_12","Revolución industrial", "×8 EV 60s — solo Era 7+",                        TipoEvento.Positivo, 7, 8.0f, 60,  30, TipoPilar.Vida,      false),
-            new DefinicionEvento("ev_13","Pandemia global",       "Penaliza Vida 80% durante 60s — Era 6+",         TipoEvento.Negativo, 6, 0.2f, 60,  35, TipoPilar.Vida,      true),
-            new DefinicionEvento("ev_14","Lanzamiento satélite",  "×3 Atmósfera durante 90s — Era 7+",              TipoEvento.Positivo, 7, 3.0f, 90,  20, TipoPilar.Atmosfera, false),
-            new DefinicionEvento("ev_15","Primer contacto",       "×20 todo durante 30s — solo Era 8",              TipoEvento.Positivo, 8, 20.0f,30,  60, TipoPilar.Vida,      true),
+            new DefinicionEvento("ev_01","Lluvia de meteoritos",  "Rocas del espacio caen sobre el planeta", TipoEvento.Negativo, 1, 3.0f, 30, 15, TipoPilar.Atmosfera, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Desviar con atmósfera", "Gasta 20% EV pero evitas todo daño",            1.0, 0f,  0.20),
+                    new DefinicionOpcionEvento("Resistir el impacto",   "EV/s ×0.3 durante 30s (gratis)",                0.3, 30f),
+                    new DefinicionOpcionEvento("Cosechar minerales",    "EV/s ×2 durante 20s pero gastas 10% EV",        2.0, 20f, 0.10),
+                },
+            },
+
+            new DefinicionEvento("ev_02","Erupción volcánica",    "Un volcán entra en actividad", TipoEvento.Neutral, 1, 2.0f, 60, 20, TipoPilar.Tierra, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Evacuar",             "Gastas 10% EV pero evitas la penalización", 1.0, 0f,  0.10),
+                    new DefinicionOpcionEvento("Aprovechar cenizas",  "EV/s ×2 durante 60s (gratis)",              2.0, 60f),
+                    new DefinicionOpcionEvento("Ignorar",             "EV/s ×0.6 durante 45s (gratis)",            0.6, 45f),
+                },
+            },
+
+            new DefinicionEvento("ev_03","Tormenta solar",        "Partículas cargadas bombardean la atmósfera", TipoEvento.Neutral, 2, 3.0f, 30, 20, TipoPilar.Atmosfera, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Escudo magnético", "Gastas 15% EV, sin efecto",              1.0, 0f,  0.15),
+                    new DefinicionOpcionEvento("Canalizar energía","EV/s ×3 durante 30s (gratis)",           3.0, 30f),
+                    new DefinicionOpcionEvento("Refugiarse",       "EV/s ×0.5 durante 20s (gratis)",         0.5, 20f),
+                },
+            },
+
+            new DefinicionEvento("ev_04","Florecimiento marino",  "Algas y microvida explotan en los océanos", TipoEvento.Positivo, 3, 3.0f, 60, 15, TipoPilar.Oceanos, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Explotar la pesca",  "EV/s ×3 durante 30s, gastas 5% EV",  3.0, 30f, 0.05),
+                    new DefinicionOpcionEvento("Conservar el bioma", "EV/s ×2 durante 90s (gratis)",       2.0, 90f),
+                },
+            },
+
+            new DefinicionEvento("ev_05","Glaciación menor",      "El hielo avanza sobre los ecosistemas", TipoEvento.Negativo, 3, 0.5f, 30, 25, TipoPilar.Oceanos, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Resistir el frío",    "EV/s ×0.5 durante 30s (gratis)",        0.5, 30f),
+                    new DefinicionOpcionEvento("Calentar forzado",    "Gastas 30% EV, sin penalización",       1.0, 0f,  0.30),
+                    new DefinicionOpcionEvento("Hibernar",            "EV/s ×0.3 durante 60s pero sin coste",  0.3, 60f),
+                },
+            },
+
+            new DefinicionEvento("ev_06","Supervolcán",           "Una caldera masiva amenaza con erupcionar", TipoEvento.Neutral, 4, 5.0f, 60, 30, TipoPilar.Tierra, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Canalizar lava",    "EV/s ×5 durante 60s, gastas 20% EV",  5.0, 60f, 0.20),
+                    new DefinicionOpcionEvento("Evacuar zona",      "Gastas 15% EV, sin efecto",           1.0, 0f,  0.15),
+                    new DefinicionOpcionEvento("Dejar que explote", "EV/s ×0.4 durante 60s (gratis)",      0.4, 60f),
+                },
+            },
+
+            new DefinicionEvento("ev_07","Impacto asteroide",     "Un cuerpo celeste se acerca al planeta", TipoEvento.Neutral, 4, 10.0f, 30, 30, TipoPilar.Atmosfera, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Todo o nada",   "Gastas 50% EV, EV/s ×10 durante 30s",   10.0, 30f, 0.50),
+                    new DefinicionOpcionEvento("Desviar órbita","Gastas 20% EV, EV/s ×2 durante 30s",     2.0, 30f, 0.20),
+                    new DefinicionOpcionEvento("Rezar",         "EV/s ×0.5 durante 60s (gratis)",         0.5, 60f),
+                },
+            },
+
+            new DefinicionEvento("ev_08","Explosión cámbrica",    "La diversidad biológica se dispara", TipoEvento.Positivo, 3, 4.0f, 90, 20, TipoPilar.Vida, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Canalizar en Vida",    "EV/s ×4 durante 90s (gratis)",    4.0, 90f),
+                    new DefinicionOpcionEvento("Equilibrio",           "EV/s ×2 durante 180s (gratis)",   2.0, 180f),
+                },
+            },
+
+            new DefinicionEvento("ev_09","Corriente de El Niño",  "Un fenómeno climático altera los océanos", TipoEvento.Positivo, 4, 2.0f, 60, 15, TipoPilar.Oceanos, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Surfear la corriente","EV/s ×3 durante 60s (gratis)",  3.0, 60f),
+                    new DefinicionOpcionEvento("Adaptarse",           "EV/s ×1.8 durante 120s (gratis)",1.8, 120f),
+                },
+            },
+
+            new DefinicionEvento("ev_10","Plaga",                 "Una enfermedad diezma los ecosistemas", TipoEvento.Negativo, 5, 0.5f, 30, 20, TipoPilar.Vida, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Cuarentena",        "EV/s ×0.5 durante 30s (gratis)",    0.5, 30f),
+                    new DefinicionOpcionEvento("Medicina express",  "Gastas 25% EV, sin penalización",   1.0, 0f,  0.25),
+                    new DefinicionOpcionEvento("Dejar evolucionar", "EV/s ×0.3 durante 60s (gratis)",    0.3, 60f),
+                },
+            },
+
+            new DefinicionEvento("ev_11","Descubrimiento fósil",  "Un equipo desentierra restos ancestrales", TipoEvento.Positivo, 5, 1.0f, 5, 15, TipoPilar.Tierra, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Vender al museo",  "+10% EV al instante (sin duración)",   1.0, 0f,  -0.10),
+                    new DefinicionOpcionEvento("Estudiar el fósil","EV/s ×1.5 durante 120s (gratis)",       1.5, 120f),
+                },
+            },
+
+            new DefinicionEvento("ev_12","Revolución industrial", "La maquinaria pesada transforma el mundo", TipoEvento.Positivo, 7, 8.0f, 60, 30, TipoPilar.Vida, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Máxima producción", "EV/s ×8 durante 60s, gastas 10% EV",  8.0, 60f, 0.10),
+                    new DefinicionOpcionEvento("Crecimiento sostenible","EV/s ×4 durante 120s (gratis)",    4.0, 120f),
+                },
+            },
+
+            new DefinicionEvento("ev_13","Pandemia global",       "Un virus se propaga rápidamente", TipoEvento.Negativo, 6, 0.2f, 60, 35, TipoPilar.Vida, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Confinamiento",     "EV/s ×0.4 durante 60s (gratis)",       0.4, 60f),
+                    new DefinicionOpcionEvento("Vacuna express",    "Gastas 30% EV, sin penalización",      1.0, 0f,  0.30),
+                    new DefinicionOpcionEvento("Ignorar",           "EV/s ×0.2 durante 90s (gratis)",       0.2, 90f),
+                },
+            },
+
+            new DefinicionEvento("ev_14","Lanzamiento satélite",  "La humanidad conquista el espacio cercano", TipoEvento.Positivo, 7, 3.0f, 90, 20, TipoPilar.Atmosfera, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Militar",     "EV/s ×3 Atmósfera durante 90s (gratis)", 3.0, 90f),
+                    new DefinicionOpcionEvento("Científico",  "EV/s ×2 global durante 120s (gratis)",   2.0, 120f),
+                },
+            },
+
+            new DefinicionEvento("ev_15","Primer contacto",       "Una civilización alienígena hace contacto", TipoEvento.Positivo, 8, 20.0f, 30, 60, TipoPilar.Vida, true)
+            {
+                Opciones = new[]
+                {
+                    new DefinicionOpcionEvento("Comerciar",   "EV/s ×20 durante 30s, gastas 30% EV",   20.0, 30f, 0.30),
+                    new DefinicionOpcionEvento("Aprender",    "EV/s ×5 durante 120s (gratis)",          5.0, 120f),
+                    new DefinicionOpcionEvento("Rechazar",    "Sin efecto (gratis)",                    1.0, 0f),
+                },
+            },
         };
     }
 

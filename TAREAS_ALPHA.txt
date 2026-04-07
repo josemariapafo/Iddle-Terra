@@ -499,7 +499,7 @@ TAREA 19 - Guardar + UI auto-compra [COMPLETADA]
  BLOQUE 9: EVENTOS CON OPCIONES MULTIPLES
 ================================================================================
 
-TAREA 20 - Extender sistema de eventos
+TAREA 20 - Extender sistema de eventos [COMPLETADA]
   Prioridad: MEDIA
   Depende de: T1
 

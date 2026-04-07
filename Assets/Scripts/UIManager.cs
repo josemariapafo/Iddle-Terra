@@ -179,6 +179,9 @@ public class UIManager : MonoBehaviour
     // ── Revelación progresiva ─────────────────────────────────────────
     private int _eraMaxVisualAnterior;
 
+    // ── Botones dinámicos de opciones de evento ───────────────────────
+    private readonly List<GameObject> _botonesOpcionEvento = new List<GameObject>();
+
     // ── Misiones: UI dinámica ─────────────────────────────────────────
     private bool _misionesTabCompletadas = false;
     private Transform _contenedorMisionesActivas;
@@ -2177,13 +2180,31 @@ public class UIManager : MonoBehaviour
         var gc = GameController.Instance;
         if (gc?.Estado.EventoActivoId != null)
             gc.AceptarEvento(gc.Estado.EventoActivoId);
+        LimpiarBotonesOpcionEvento();
         Panel_Evento?.SetActive(false);
     }
 
     void OnClickRechazarEvento()
     {
         GameController.Instance?.RechazarEvento();
+        LimpiarBotonesOpcionEvento();
         Panel_Evento?.SetActive(false);
+    }
+
+    void OnClickOpcionEvento(int indice)
+    {
+        var gc = GameController.Instance;
+        if (gc?.Estado.EventoActivoId != null)
+            gc.AceptarEventoOpcion(gc.Estado.EventoActivoId, indice);
+        LimpiarBotonesOpcionEvento();
+        Panel_Evento?.SetActive(false);
+    }
+
+    void LimpiarBotonesOpcionEvento()
+    {
+        foreach (var go in _botonesOpcionEvento)
+            if (go != null) Destroy(go);
+        _botonesOpcionEvento.Clear();
     }
 
     void OnClickReclamarBonus()
@@ -2230,9 +2251,79 @@ public class UIManager : MonoBehaviour
         if (Text_NombreEvento != null) Text_NombreEvento.text = evDef.Nombre;
         if (Text_DescripcionEvento != null) Text_DescripcionEvento.text = evDef.Descripcion;
 
-        Btn_AceptarEvento?.gameObject.SetActive(evDef.RequiereAccion);
-        Btn_RechazarEvento?.gameObject.SetActive(evDef.RequiereAccion);
+        // Limpiar botones dinámicos previos
+        LimpiarBotonesOpcionEvento();
+
+        bool tieneOpciones = evDef.Opciones != null && evDef.Opciones.Length > 0;
+
+        if (tieneOpciones)
+        {
+            // Ocultar botones clásicos y generar dinámicos
+            Btn_AceptarEvento?.gameObject.SetActive(false);
+            Btn_RechazarEvento?.gameObject.SetActive(false);
+            GenerarBotonesOpcionEvento(evDef.Opciones);
+        }
+        else
+        {
+            // Modo clásico Aceptar/Rechazar
+            Btn_AceptarEvento?.gameObject.SetActive(evDef.RequiereAccion);
+            Btn_RechazarEvento?.gameObject.SetActive(evDef.RequiereAccion);
+        }
+
         Panel_Evento?.SetActive(true);
+    }
+
+    void GenerarBotonesOpcionEvento(DefinicionOpcionEvento[] opciones)
+    {
+        if (Btn_AceptarEvento == null || Panel_Evento == null) return;
+
+        // Usamos Btn_AceptarEvento como plantilla para mantener el estilo visual.
+        Transform padre = Btn_AceptarEvento.transform.parent;
+        if (padre == null) padre = Panel_Evento.transform;
+
+        var rtPlantilla = Btn_AceptarEvento.GetComponent<RectTransform>();
+        Vector2 tamano = rtPlantilla != null ? rtPlantilla.sizeDelta : new Vector2(500, 70);
+        float altoBoton = tamano.y + 10f;
+
+        // Apilamos las opciones verticalmente centradas.
+        float yInicio = ((opciones.Length - 1) * altoBoton) / 2f - 80f;
+
+        for (int i = 0; i < opciones.Length; i++)
+        {
+            int indice = i; // capturar para closure
+            var opcion = opciones[i];
+
+            GameObject copia = Instantiate(Btn_AceptarEvento.gameObject, padre);
+            copia.name = $"Btn_OpcionEvento_{i}";
+            copia.SetActive(true);
+
+            var rt = copia.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = new Vector2(0, yInicio - i * altoBoton);
+                rt.sizeDelta = new Vector2(Mathf.Max(tamano.x, 520), tamano.y);
+            }
+
+            // Etiqueta: "Texto — Descripción"
+            var tmp = copia.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (tmp != null)
+            {
+                tmp.text = $"<b>{opcion.Texto}</b>\n<size=80%>{opcion.Descripcion}</size>";
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.enableWordWrapping = true;
+            }
+
+            var btn = copia.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(() => OnClickOpcionEvento(indice));
+            }
+
+            _botonesOpcionEvento.Add(copia);
+        }
     }
 
     void OnEstancamiento(EventoEstancamientoDetectado evt)

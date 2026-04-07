@@ -264,6 +264,7 @@ namespace Terra.Controllers
         public bool PuedeAvanzarEra() => Eras.PuedeAvanzar();
         public double ProgresoEra() => Eras.ProgresoHaciaEra();
         public void AceptarEvento(string id) => Eventos.AceptarEvento(id);
+        public void AceptarEventoOpcion(string id, int indice) => Eventos.AceptarOpcion(id, indice);
         public void RechazarEvento() => Eventos.RechazarEvento();
         public bool ReclamarBonusDiario() => Racha.ReclamarBonusDiario();
         public bool ComprarSubMejoraCadena(string id) => Cadenas.ComprarNivel(id);

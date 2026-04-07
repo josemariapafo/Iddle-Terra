@@ -56,6 +56,55 @@ namespace Terra.Systems
             _estado.TiempoRestanteEvento = def.DuracionSegundos;
         }
 
+        /// <summary>
+        /// Aplica el efecto de una de las opciones del evento activo.
+        /// Compat: si el evento no tiene Opciones, cae al modo clásico (AceptarEvento).
+        /// </summary>
+        public void AceptarOpcion(string idEvento, int indiceOpcion)
+        {
+            if (_estado.EventoActivoId != idEvento) return;
+
+            var def = _definiciones.FirstOrDefault(d => d.Id == idEvento);
+            if (def == null) return;
+
+            // Compat modo clásico
+            if (def.Opciones == null || def.Opciones.Length == 0)
+            {
+                AceptarEvento(idEvento);
+                return;
+            }
+
+            if (indiceOpcion < 0 || indiceOpcion >= def.Opciones.Length) return;
+
+            var opcion = def.Opciones[indiceOpcion];
+
+            // Coste/bono en porcentaje de EV actual
+            // > 0 → gasta EV | < 0 → bonus instantáneo
+            if (opcion.CostePorcentajeEV > 0)
+            {
+                double coste = _estado.EnergiaVital * opcion.CostePorcentajeEV;
+                _estado.EnergiaVital = Math.Max(0, _estado.EnergiaVital - coste);
+            }
+            else if (opcion.CostePorcentajeEV < 0)
+            {
+                double bonus = _estado.EnergiaVital * Math.Abs(opcion.CostePorcentajeEV);
+                _estado.EnergiaVital += bonus;
+            }
+
+            // Efecto temporal (si Duracion > 0 y Multiplicador != 1)
+            if (opcion.Duracion > 0 && Math.Abs(opcion.Multiplicador - 1.0) > 0.0001)
+            {
+                _estado.MultiplicadorEvento = opcion.Multiplicador;
+                _estado.TiempoRestanteEvento = opcion.Duracion;
+            }
+            else
+            {
+                // Opción instantánea (sin efecto temporal): cerrar evento inmediatamente
+                _estado.EventoActivoId = null;
+                ResetearTimer();
+            }
+        }
+
         public void RechazarEvento()
         {
             _estado.EventoActivoId = null;

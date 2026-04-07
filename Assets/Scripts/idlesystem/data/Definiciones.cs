@@ -168,6 +168,27 @@ namespace Terra.Data
             1.0 + BonusPorNivel * nivel;
     }
 
+    // ── Opción de evento (cada botón elegible por el jugador) ─────────────
+    [Serializable]
+    public class DefinicionOpcionEvento
+    {
+        public string Texto;                    // lo que pone el botón
+        public string Descripcion;              // explicación del efecto
+        public double Multiplicador;            // 1.0 = sin efecto; <1 penaliza, >1 bonifica
+        public float Duracion;                  // segundos de aplicación del multiplicador
+        public double CostePorcentajeEV;        // 0 = gratis; 0.3 = gasta 30% del EV actual
+
+        public DefinicionOpcionEvento(
+            string texto, string descripcion,
+            double multiplicador, float duracion,
+            double costePorcentajeEV = 0)
+        {
+            Texto = texto; Descripcion = descripcion;
+            Multiplicador = multiplicador; Duracion = duracion;
+            CostePorcentajeEV = costePorcentajeEV;
+        }
+    }
+
     // ── Definición de evento aleatorio (inmutable) ────────────────────────
     [Serializable]
     public class DefinicionEvento
@@ -177,11 +198,12 @@ namespace Terra.Data
         public string Descripcion;
         public TipoEvento Tipo;
         public int EraMinima;
-        public double Multiplicador;            // qué aplica al aceptar
+        public double Multiplicador;            // qué aplica al aceptar (modo clásico)
         public float DuracionSegundos;
         public int CooldownMinutos;
         public TipoPilar PilarAfectado;
         public bool RequiereAccion;             // si false, se aplica automático
+        public DefinicionOpcionEvento[] Opciones; // null = compat modo clásico
 
         public DefinicionEvento(
             string id, string nombre, string desc,
