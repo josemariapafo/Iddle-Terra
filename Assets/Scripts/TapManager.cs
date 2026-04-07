@@ -134,7 +134,10 @@ public class TapManager : MonoBehaviour
         double multCombo = _comboActivo
             ? multiplicadorCombo + (float)(gc.Codice?.MultiplicadorComboExtra() ?? 0.0)
             : 1.0;
-        double evExtra = gc.Estado.EVPorSegundo * segundosPorTap * multCombo * bonusTap;
+        // Bonus secundario Océanos (T21): +1% poder de tap por nivel total
+        int nivOce = gc.Mejoras.NivelTotalPilar(Terra.Core.TipoPilar.Oceanos);
+        double bonusOce = 1.0 + 0.01 * nivOce;
+        double evExtra = gc.Estado.EVPorSegundo * segundosPorTap * multCombo * bonusTap * bonusOce;
         gc.Estado.EnergiaVital += evExtra;
 
         Color color = _comboActivo ? colorComboActivo : colorTapNormal;

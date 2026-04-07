@@ -134,6 +134,7 @@ namespace Terra.Controllers
             Cadenas = new SistemaCadenas(defCadenas);
             _calculador.AsignarCadenas(Cadenas);
             Mejoras = new SistemaMejoras(defMejoras);
+            Cadenas.AsignarMejoras(Mejoras);
             Sinergias = new SistemaSinergias(defSinergias, Mejoras);
             Prestige = new SistemaPrestige(_calculador);
             Eras = new SistemaEras(defEras, Mejoras, Sinergias, Cadenas);

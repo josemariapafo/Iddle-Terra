@@ -198,6 +198,9 @@ public class UIManager : MonoBehaviour
     private Button _btnAutoCompraSmart;
     private TextMeshProUGUI _txtAutoCompraSmart;
 
+    // ── Bonus secundario pilar (T21): texto dinámico en Panel_Categoria
+    private TextMeshProUGUI _txtBonusPilar;
+
     static readonly string[][] _zonasNombres =
     {
         new[]{ "Baja atmosfera",  "Nubes",         "Alta atmosfera"  },
@@ -292,6 +295,7 @@ public class UIManager : MonoBehaviour
         {
             if (_tabInfraestructura) ActualizarTarjetasCadena();
             else ActualizarTarjetas();
+            ActualizarBonusPilarUI(_categoriaActual);
         }
         if (Panel_Prestige != null && Panel_Prestige.activeSelf)
             ActualizarPrestige();
@@ -546,6 +550,7 @@ public class UIManager : MonoBehaviour
             Btn_TabProduccion.gameObject.SetActive(cadenaActiva);
 
         ActualizarTogglesAutomatizacion(pilar);
+        ActualizarBonusPilarUI(pilar);
 
         AplicarTab();
         MostrarPantalla(Panel_Categoria);
@@ -631,6 +636,53 @@ public class UIManager : MonoBehaviour
             txt.text = activa ? label + ": ON" : label + ": OFF";
             txt.color = Color.white;
         }
+    }
+
+    // ── Bonus secundario por pilar (T21) ─────────────────────────────
+    void ActualizarBonusPilarUI(TipoPilar pilar)
+    {
+        var gc = GameController.Instance;
+        if (gc == null || Panel_Categoria == null) return;
+
+        // Crear el texto una sola vez bajo Panel_Categoria (esquina superior izquierda)
+        if (_txtBonusPilar == null)
+        {
+            var go = CrearTextoUI(Panel_Categoria.transform, "Text_BonusPilar_Dyn", "", 22);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = new Vector2(20, -20);
+            rt.sizeDelta = new Vector2(520, 60);
+            _txtBonusPilar = go.GetComponent<TextMeshProUGUI>();
+            _txtBonusPilar.fontStyle = FontStyles.Bold;
+            _txtBonusPilar.color = new Color(1f, 0.9f, 0.4f);
+            _txtBonusPilar.alignment = TextAlignmentOptions.TopLeft;
+        }
+        _txtBonusPilar.transform.SetAsLastSibling();
+
+        int nivel = gc.Mejoras.NivelTotalPilar(pilar);
+        string texto;
+        switch (pilar)
+        {
+            case TipoPilar.Atmosfera:
+                texto = $"Bonus Atmósfera: +{nivel}% producción (nivel total: {nivel})";
+                break;
+            case TipoPilar.Oceanos:
+                texto = $"Bonus Océanos: +{nivel}% poder de tap (nivel total: {nivel})";
+                break;
+            case TipoPilar.Tierra:
+                double bonusCap = 0.5 * nivel;
+                texto = $"Bonus Tierra: +{bonusCap:F0}% cap de cadenas (nivel total: {nivel})";
+                break;
+            case TipoPilar.Vida:
+                texto = $"Bonus Vida: +{nivel}% efectividad sinergias (nivel total: {nivel})";
+                break;
+            default:
+                texto = "";
+                break;
+        }
+        _txtBonusPilar.text = texto;
     }
 
     void OnClickToggleAutoCompra()

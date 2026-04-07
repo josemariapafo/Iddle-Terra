@@ -50,8 +50,44 @@ namespace Terra.Systems
             double nocturno  = CalcularBonusNocturno();
             double codice    = _codice?.MultiplicadorEV() ?? 1.0;
 
-            return base_ * sinergias * nodos * prestige * evento * racha * nocturno * codice;
+            // Bonus secundario Atmósfera: +1% producción idle por nivel total
+            double bonusAtm  = BonusAtmosferaProduccion(estado);
+
+            return base_ * sinergias * nodos * prestige * evento * racha * nocturno * codice * bonusAtm;
         }
+
+        // ── Bonus secundarios por pilar (T21) ─────────────────────────────
+        // Cada pilar especializa su rol mediante su nivel total de mejoras.
+
+        /// <summary>Nivel total de mejoras compradas en un pilar.</summary>
+        public int NivelTotalPilar(EstadoJuego estado, TipoPilar pilar)
+        {
+            int total = 0;
+            foreach (var def in _todasMejoras)
+                if (def.Pilar == pilar)
+                    total += estado.NivelMejora(def.Id);
+            return total;
+        }
+
+        /// <summary>Atmósfera: +1% producción idle por nivel total.</summary>
+        public double BonusAtmosferaProduccion(EstadoJuego estado) =>
+            1.0 + 0.01 * NivelTotalPilar(estado, TipoPilar.Atmosfera);
+
+        /// <summary>Océanos: +1% poder de tap por nivel total.</summary>
+        public double BonusOceanosTap(EstadoJuego estado) =>
+            1.0 + 0.01 * NivelTotalPilar(estado, TipoPilar.Oceanos);
+
+        /// <summary>Tierra: -0.5% coste mejoras por nivel total (cap -50%).</summary>
+        public double BonusTierraCoste(EstadoJuego estado)
+        {
+            double reduccion = 0.005 * NivelTotalPilar(estado, TipoPilar.Tierra);
+            if (reduccion > 0.5) reduccion = 0.5;
+            return 1.0 - reduccion;
+        }
+
+        /// <summary>Vida: +1% efectividad de sinergias por nivel total.</summary>
+        public double BonusVidaSinergias(EstadoJuego estado) =>
+            1.0 + 0.01 * NivelTotalPilar(estado, TipoPilar.Vida);
 
         /// <summary>
         /// Producción base = suma por pilar, cada pilar limitado por su cadena.
@@ -98,10 +134,17 @@ namespace Terra.Systems
         {
             double mult = 1.0;
             double bonusCodice = _codice?.BonusSinergias() ?? 0.0;
+            bool alguna = false;
 
             foreach (var def in _todasSinergias)
                 if (estado.SinergiaActiva(def.Id))
+                {
                     mult *= def.Multiplicador + bonusCodice;
+                    alguna = true;
+                }
+
+            // Vida amplifica la efectividad SOLO si hay sinergias activas
+            if (alguna) mult *= BonusVidaSinergias(estado);
 
             return mult;
         }

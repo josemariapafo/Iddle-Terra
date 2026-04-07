@@ -531,7 +531,7 @@ TAREA 20 - Extender sistema de eventos [COMPLETADA]
  BLOQUE 10: ESPECIALIZACION DE PILARES
 ================================================================================
 
-TAREA 21 - Bonus secundario por pilar
+TAREA 21 - Bonus secundario por pilar [COMPLETADA]
   Prioridad: MEDIA
   Depende de: T6 (cadenas integradas en produccion)
 

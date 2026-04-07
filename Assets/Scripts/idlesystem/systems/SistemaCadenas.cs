@@ -15,6 +15,7 @@ namespace Terra.Systems
         private readonly DefinicionSubMejoraCadena[] _definiciones;
         private EstadoJuego _estado;
         private SistemaCodice _codice;
+        private SistemaMejoras _mejoras;
 
         // Era mínima por pilar (derivada de las definiciones)
         private readonly int[] _eraDesbloqueo = new int[4]; // indexado por TipoPilar
@@ -35,6 +36,7 @@ namespace Terra.Systems
         }
 
         public void AsignarCodice(SistemaCodice codice) => _codice = codice;
+        public void AsignarMejoras(SistemaMejoras mejoras) => _mejoras = mejoras;
 
         public void Inicializar() { }
 
@@ -160,6 +162,14 @@ namespace Terra.Systems
             if (!CadenaPilarDesbloqueada(pilar)) return double.MaxValue;
 
             double bonusCap = 1.0 + (_codice?.BonusCapCadena() ?? 0.0);
+
+            // Bonus secundario Tierra (T21): +0.5% al cap por nivel total Tierra
+            if (_mejoras != null)
+            {
+                int nivTierra = _mejoras.NivelTotalPilar(TipoPilar.Tierra);
+                bonusCap += 0.005 * nivTierra;
+            }
+
             double gen  = CalcularCapEslabon(pilar, TipoEslabon.Generacion) * bonusCap;
             double proc = CalcularCapEslabon(pilar, TipoEslabon.Procesamiento) * bonusCap;
             double dist = CalcularCapEslabon(pilar, TipoEslabon.Distribucion) * bonusCap;
