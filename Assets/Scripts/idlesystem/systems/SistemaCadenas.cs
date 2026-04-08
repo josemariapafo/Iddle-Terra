@@ -62,6 +62,7 @@ namespace Terra.Systems
 
             var est = _estado.Cadenas[idSubMejora];
             if (!est.Desbloqueada || est.Nivel >= def.NivelMax) return false;
+            if (_estado.CadenasBloqueadasDesafio) return false;
 
             double coste = def.CosteEnNivel(est.Nivel) * (1.0 - (_codice?.ReduccionCosteCadenas() ?? 0.0));
             if (_estado.EnergiaVital < coste) return false;
@@ -81,6 +82,7 @@ namespace Terra.Systems
 
             var est = _estado.Cadenas[idSubMejora];
             if (!est.Desbloqueada) return 0;
+            if (_estado.CadenasBloqueadasDesafio) return 0;
 
             int comprados = 0;
             while (est.Nivel < def.NivelMax)

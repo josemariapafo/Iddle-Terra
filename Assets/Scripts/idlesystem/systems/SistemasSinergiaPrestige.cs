@@ -186,6 +186,7 @@ namespace Terra.Systems
         public void Realizar(TipoPrestige tipo)
         {
             if (!PuedeHacer(tipo)) return;
+            if (_estado.PrestigeBloqueadoDesafio) return;
 
             double ganancia = GananciaEfectiva(tipo);
             if (ganancia <= 0) return;

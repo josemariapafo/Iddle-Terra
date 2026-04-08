@@ -53,7 +53,10 @@ namespace Terra.Systems
             // Bonus secundario Atmósfera: +1% producción idle por nivel total
             double bonusAtm  = BonusAtmosferaProduccion(estado);
 
-            return base_ * sinergias * nodos * prestige * evento * racha * nocturno * codice * bonusAtm;
+            // Multiplicador permanente por desafíos completados (T23)
+            double desafios  = estado.BonusDesafiosCompletados > 0 ? estado.BonusDesafiosCompletados : 1.0;
+
+            return base_ * sinergias * nodos * prestige * evento * racha * nocturno * codice * bonusAtm * desafios;
         }
 
         // ── Bonus secundarios por pilar (T21) ─────────────────────────────

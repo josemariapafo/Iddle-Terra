@@ -62,13 +62,40 @@ namespace Terra.Systems
 
             if (!est.Desbloqueada || est.Nivel >= def.NivelMax) return false;
             if (_estado.EnergiaVital < coste) return false;
+            if (!RestriccionDesafioPermite(def)) return false;
 
             _estado.EnergiaVital -= coste;
             est.Nivel++;
             _estado.MejorasCompradasEnSesion++;
+            _estado.ComprasEnDesafio++;
 
             PublicarCompra(idMejora, est.Nivel, def);
             ComprobarDesbloqueos();
+            return true;
+        }
+
+        /// <summary>
+        /// Comprueba si las restricciones de un desafío activo permiten comprar
+        /// esta mejora. Devuelve true si no hay desafío o si la mejora es válida.
+        /// </summary>
+        private bool RestriccionDesafioPermite(DefinicionMejora def)
+        {
+            if (string.IsNullOrEmpty(_estado.DesafioActivoId)) return true;
+
+            // Pilar bloqueado
+            if (_estado.PilaresBloqueadosDesafio != null
+                && (int)def.Pilar < _estado.PilaresBloqueadosDesafio.Length
+                && _estado.PilaresBloqueadosDesafio[(int)def.Pilar])
+                return false;
+
+            // Solo zona 0
+            if (_estado.SoloZona0Desafio && def.Zona != 0) return false;
+
+            // Límite de compras
+            if (_estado.MaxComprasDesafio > 0
+                && _estado.ComprasEnDesafio >= _estado.MaxComprasDesafio)
+                return false;
+
             return true;
         }
 
@@ -83,6 +110,7 @@ namespace Terra.Systems
             int comprados = 0;
             while (comprados < cantidad && est.Nivel < def.NivelMax)
             {
+                if (!RestriccionDesafioPermite(def)) break;
                 double coste = CosteConReduccion(def, est.Nivel);
                 if (_estado.EnergiaVital < coste) break;
 
@@ -90,6 +118,7 @@ namespace Terra.Systems
                 est.Nivel++;
                 comprados++;
                 _estado.MejorasCompradasEnSesion++;
+                _estado.ComprasEnDesafio++;
             }
 
             if (comprados > 0)
@@ -112,6 +141,7 @@ namespace Terra.Systems
             int comprados = 0;
             while (est.Nivel < def.NivelMax)
             {
+                if (!RestriccionDesafioPermite(def)) break;
                 double coste = CosteConReduccion(def, est.Nivel);
                 if (_estado.EnergiaVital < coste) break;
 
@@ -119,6 +149,7 @@ namespace Terra.Systems
                 est.Nivel++;
                 comprados++;
                 _estado.MejorasCompradasEnSesion++;
+                _estado.ComprasEnDesafio++;
             }
 
             if (comprados > 0)

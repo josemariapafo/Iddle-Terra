@@ -570,7 +570,7 @@ TAREA 22 - Catalogo de desafios [COMPLETADA]
 
 ------------------------------------------------------------------------
 
-TAREA 23 - Sistema de desafios
+TAREA 23 - Sistema de desafios [COMPLETADA]
   Prioridad: MEDIA
   Depende de: T22
 

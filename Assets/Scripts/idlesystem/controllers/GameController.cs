@@ -32,6 +32,7 @@ namespace Terra.Controllers
         public SistemaMisiones Misiones { get; private set; }
         public SistemaCodice Codice { get; private set; }
         public SistemaAutomatizacion Automatizacion { get; private set; }
+        public SistemaDesafios Desafios { get; private set; }
 
         // ── Sistemas privados ─────────────────────────────────────────────
         private CalculadorProduccion _calculador;
@@ -123,6 +124,7 @@ namespace Terra.Controllers
             var defCadenas = CatalogoCadenas.Crear();
             var defMisiones = CatalogoMisiones.Crear();
             var defCodice = CatalogoCodice.Crear();
+            var defDesafios = CatalogoDesafios.Crear();
 
             // 2. Crear estado
             Estado = new EstadoJuego();
@@ -149,6 +151,7 @@ namespace Terra.Controllers
             Mejoras.AsignarCodice(Codice);
             Cadenas.AsignarCodice(Codice);
             Automatizacion = new SistemaAutomatizacion(Mejoras);
+            Desafios = new SistemaDesafios(defDesafios);
             _offline = new SistemaOffline(_calculador);
             _guardado = new SistemaGuardado();
 
@@ -166,6 +169,7 @@ namespace Terra.Controllers
             Misiones.AsignarEstado(Estado);
             Codice.AsignarEstado(Estado);
             Automatizacion.AsignarEstado(Estado);
+            Desafios.AsignarEstado(Estado);
             _offline.AsignarEstado(Estado);
 
             // 6. Suscribir a prestige y avance de era para reconectar sistemas
@@ -247,6 +251,7 @@ namespace Terra.Controllers
             Estancamiento.Actualizar(delta);
             Misiones.Actualizar(delta);
             Automatizacion.Actualizar(delta);
+            Desafios.Actualizar(delta);
 
             // Publicar cambio de EV
             EventBus.Publicar(new EventoEVCambia(Estado.EnergiaVital));
@@ -272,6 +277,8 @@ namespace Terra.Controllers
         public int ComprarSubMejoraCadenaMax(string id) => Cadenas.ComprarMax(id);
         public bool ComprarNodoCodice(string id) => Codice.ComprarNodo(id);
         public void AlternarAutomatizacion(TipoAutomatizacion tipo) => Automatizacion.Alternar(tipo);
+        public bool IniciarDesafio(string id) => Desafios.IniciarDesafio(id);
+        public void AbandonarDesafio() => Desafios.AbandonarDesafio();
 
         /// <summary>Aplica un multiplicador temporal de EV — usado por MeteoroManager.</summary>
         public void AplicarEventoTemporal(float multiplicador, float duracionSegundos)
