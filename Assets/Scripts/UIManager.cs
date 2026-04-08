@@ -130,6 +130,11 @@ public class UIManager : MonoBehaviour
     public GameObject Panel_Misiones;
     public Button Btn_AbrirMisiones;
 
+    // ── Panel Desafios (T24) ────────────────────────────────────────────
+    [Header("Desafios")]
+    public GameObject Panel_Desafios;
+    public Button Btn_AbrirDesafios;
+
     [Header("Banner Mision Completada")]
     public GameObject Panel_BannerMision;
     public TextMeshProUGUI Text_BannerMision;
@@ -201,6 +206,10 @@ public class UIManager : MonoBehaviour
     // ── Bonus secundario pilar (T21): texto dinámico en Panel_Categoria
     private TextMeshProUGUI _txtBonusPilar;
 
+    // ── Desafios (T24): UI dinámica ───────────────────────────────────
+    private Transform _contenedorDesafios;
+    private TextMeshProUGUI _txtCabeceraDesafios;
+
     static readonly string[][] _zonasNombres =
     {
         new[]{ "Baja atmosfera",  "Nubes",         "Alta atmosfera"  },
@@ -227,9 +236,11 @@ public class UIManager : MonoBehaviour
     void Start()
     {
         ConstruirUICodiceProgramatico();
+        ConstruirUIDesafiosProgramatico();
         ConfigurarBotones();
         SuscribirEventos();
         InicializarPanelMisiones();
+        InicializarPanelDesafios();
         InicializarRevelacionProgresiva();
         ArreglarLayoutPopupNodo();
         MostrarPantalla(Panel_Principal);
@@ -305,6 +316,8 @@ public class UIManager : MonoBehaviour
             ActualizarNodosArbol();
         if (Panel_Misiones != null && Panel_Misiones.activeSelf)
             ActualizarWidgetMisiones();
+        if (Panel_Desafios != null && Panel_Desafios.activeSelf)
+            ActualizarWidgetDesafios();
     }
 
     void OnDestroy()
@@ -327,6 +340,8 @@ public class UIManager : MonoBehaviour
         Btn_CerrarCategoria?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
         Btn_AbrirMisiones?.onClick.AddListener(() => { CambiarTabMisiones(false); MostrarPantalla(Panel_Misiones); });
         // Btn_CerrarMisiones se crea dinámicamente en InicializarPanelMisiones
+        Btn_AbrirDesafios?.onClick.AddListener(() => MostrarPantalla(Panel_Desafios));
+        // Btn_CerrarDesafios se crea dinámicamente en InicializarPanelDesafios
         Btn_AbrirEvolucion?.onClick.AddListener(() => AbrirEvolucion());
         Btn_CerrarEvolucion?.onClick.AddListener(() => MostrarPantalla(Panel_Principal));
         Btn_ComprarNodo?.onClick.AddListener(OnClickComprarNodo);
@@ -466,6 +481,7 @@ public class UIManager : MonoBehaviour
         SetVisible(Btn_AbrirEvolucion, eraMax >= 2);
         SetVisible(Btn_AbrirMisiones, eraMax >= 2);
         SetVisible(Btn_AbrirPrestige, eraMax >= 3);
+        SetVisible(Btn_AbrirDesafios, eraMax >= 5);
         // Códice visible tras primer prestige (tiene fósiles)
         var gc2 = GameController.Instance;
         bool tienePrestige = gc2 != null && gc2.Estado.Prestige.VecesTotales > 0;
@@ -494,6 +510,10 @@ public class UIManager : MonoBehaviour
             if (eraMax >= 4 && _eraMaxVisualAnterior < 4)
             {
                 Revelar(Btn_Vida, "Vida");
+            }
+            if (eraMax >= 5 && _eraMaxVisualAnterior < 5)
+            {
+                Revelar(Btn_AbrirDesafios, "Desafios");
             }
 
             _eraMaxVisualAnterior = eraMax;
@@ -1478,6 +1498,322 @@ public class UIManager : MonoBehaviour
         }
 
         _txtBadgeMisiones.text = hayPendiente ? "<color=#FF4444>!</color>" : "";
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // PANEL DESAFIOS (T24)
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Crea Panel_Desafios y Btn_AbrirDesafios en runtime si no están asignados
+    /// en el Inspector. Se ejecuta antes de ConfigurarBotones para que los
+    /// listeners encuentren los botones ya creados.
+    /// </summary>
+    void ConstruirUIDesafiosProgramatico()
+    {
+        // Buscar canvas raíz (igual que ConstruirUICodiceProgramatico)
+        Transform canvasRoot = null;
+        if (Panel_Prestige != null) canvasRoot = Panel_Prestige.transform.parent;
+        else if (Panel_Principal != null) canvasRoot = Panel_Principal.transform.parent;
+        if (canvasRoot == null)
+        {
+            var canvas = GameObject.FindObjectOfType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[UIManager] No se encontro Canvas para construir UI Desafios");
+                return;
+            }
+            canvasRoot = canvas.transform;
+        }
+
+        // ───── PANEL DESAFIOS (pantalla completa) ─────
+        if (Panel_Desafios == null)
+        {
+            Panel_Desafios = new GameObject("Panel_Desafios_Dyn",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            Panel_Desafios.transform.SetParent(canvasRoot, false);
+            var rtPanel = Panel_Desafios.GetComponent<RectTransform>();
+            rtPanel.anchorMin = Vector2.zero;
+            rtPanel.anchorMax = Vector2.one;
+            rtPanel.offsetMin = Vector2.zero;
+            rtPanel.offsetMax = Vector2.zero;
+            Panel_Desafios.GetComponent<Image>().color = new Color(0.08f, 0.08f, 0.12f, 0.96f);
+            Panel_Desafios.SetActive(false);
+        }
+
+        // ───── BOTÓN ABRIR DESAFIOS ─────
+        // Replica el layout de otro botón del HUD (Prestige o Misiones) y se
+        // pega debajo del más bajo ya existente.
+        if (Btn_AbrirDesafios == null)
+        {
+            Button referencia = Btn_AbrirPrestige ?? Btn_AbrirMisiones ?? Btn_AbrirEvolucion;
+            if (referencia != null)
+            {
+                var rtRef = referencia.GetComponent<RectTransform>();
+                var goAbrir = CrearBotonUI(referencia.transform.parent,
+                    "Btn_AbrirDesafios_Dyn", "DESAFIOS", 0, 0, rtRef.sizeDelta.x, rtRef.sizeDelta.y);
+                var rtAbrir = goAbrir.GetComponent<RectTransform>();
+                rtAbrir.anchorMin = rtRef.anchorMin;
+                rtAbrir.anchorMax = rtRef.anchorMax;
+                rtAbrir.pivot     = rtRef.pivot;
+
+                // Encontrar el Y más bajo entre los botones del HUD ya presentes
+                float yMasBajo = rtRef.anchoredPosition.y;
+                Button[] hermanos = { Btn_AbrirPrestige, Btn_AbrirMisiones,
+                                      Btn_AbrirEvolucion, Btn_AbrirCodice };
+                foreach (var h in hermanos)
+                {
+                    if (h == null) continue;
+                    var rh = h.GetComponent<RectTransform>();
+                    if (rh.anchoredPosition.y < yMasBajo) yMasBajo = rh.anchoredPosition.y;
+                }
+                rtAbrir.anchoredPosition = new Vector2(rtRef.anchoredPosition.x,
+                    yMasBajo - rtRef.sizeDelta.y - 10);
+
+                goAbrir.GetComponent<Image>().color = new Color(0.7f, 0.45f, 0.2f);
+                Btn_AbrirDesafios = goAbrir.GetComponent<Button>();
+                Btn_AbrirDesafios.gameObject.SetActive(false); // revelación progresiva lo activa
+            }
+        }
+
+        Debug.Log("[UIManager] UI Desafios construida programaticamente");
+    }
+
+    void InicializarPanelDesafios()
+    {
+        if (Panel_Desafios == null) return;
+
+        var panelRT = Panel_Desafios.GetComponent<RectTransform>();
+
+        // 1. Destruir LayoutGroups residuales
+        var vlgViejo = Panel_Desafios.GetComponent<VerticalLayoutGroup>();
+        if (vlgViejo != null) DestroyImmediate(vlgViejo);
+
+        // 2. Panel a pantalla completa
+        panelRT.anchorMin = Vector2.zero;
+        panelRT.anchorMax = Vector2.one;
+        panelRT.offsetMin = Vector2.zero;
+        panelRT.offsetMax = Vector2.zero;
+
+        // 3. Destruir hijos antiguos
+        for (int i = panelRT.childCount - 1; i >= 0; i--)
+            DestroyImmediate(panelRT.GetChild(i).gameObject);
+
+        // 4. Botón cerrar (arriba-derecha)
+        var goCerrar = CrearBotonUI(panelRT, "Btn_CerrarDesafios_Dyn", "X", 0, 0, 60, 50);
+        var rtCerrar = goCerrar.GetComponent<RectTransform>();
+        rtCerrar.anchorMin = new Vector2(1, 1);
+        rtCerrar.anchorMax = new Vector2(1, 1);
+        rtCerrar.anchoredPosition = new Vector2(-40, -30);
+        goCerrar.GetComponent<Button>().onClick.AddListener(() => MostrarPantalla(Panel_Principal));
+
+        // 5. Título (arriba-centro)
+        var goTitulo = CrearTextoUI(panelRT, "Titulo_Desafios", "DESAFIOS", 32);
+        var tmpTit = goTitulo.GetComponent<TextMeshProUGUI>();
+        tmpTit.alignment = TextAlignmentOptions.Center;
+        tmpTit.fontStyle = FontStyles.Bold;
+        var rtTit = goTitulo.GetComponent<RectTransform>();
+        rtTit.anchorMin = new Vector2(0.5f, 1);
+        rtTit.anchorMax = new Vector2(0.5f, 1);
+        rtTit.anchoredPosition = new Vector2(0, -40);
+        rtTit.sizeDelta = new Vector2(400, 50);
+
+        // 6. Cabecera dinámica (bono acumulado)
+        var goCab = CrearTextoUI(panelRT, "Cabecera_Desafios", "", 18);
+        _txtCabeceraDesafios = goCab.GetComponent<TextMeshProUGUI>();
+        _txtCabeceraDesafios.alignment = TextAlignmentOptions.Center;
+        _txtCabeceraDesafios.color = new Color(0.85f, 0.85f, 0.85f);
+        var rtCab = goCab.GetComponent<RectTransform>();
+        rtCab.anchorMin = new Vector2(0.5f, 1);
+        rtCab.anchorMax = new Vector2(0.5f, 1);
+        rtCab.anchoredPosition = new Vector2(0, -90);
+        rtCab.sizeDelta = new Vector2(700, 30);
+
+        // 7. Contenedor de filas (stretch bajo la cabecera)
+        var goCont = new GameObject("Contenedor_Desafios", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        goCont.transform.SetParent(panelRT, false);
+        var rtCont = goCont.GetComponent<RectTransform>();
+        rtCont.anchorMin = Vector2.zero;
+        rtCont.anchorMax = Vector2.one;
+        rtCont.offsetMin = new Vector2(15, 15);
+        rtCont.offsetMax = new Vector2(-15, -120);
+        var vlg = goCont.GetComponent<VerticalLayoutGroup>();
+        vlg.spacing = 12;
+        vlg.padding = new RectOffset(0, 0, 5, 5);
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = false;
+        _contenedorDesafios = goCont.transform;
+    }
+
+    void ActualizarWidgetDesafios()
+    {
+        if (_contenedorDesafios == null) return;
+        var gc = GameController.Instance;
+        if (gc == null || gc.Desafios == null) return;
+
+        // Cabecera con bono acumulado
+        if (_txtCabeceraDesafios != null)
+        {
+            int completados = gc.Desafios.ContarCompletados();
+            double bono = gc.Estado.BonusDesafiosCompletados;
+            _txtCabeceraDesafios.text =
+                $"Completados: {completados}    |    Bono acumulado: ×{bono:F2}";
+        }
+
+        RegenerarFilasDesafios(gc);
+    }
+
+    void RegenerarFilasDesafios(GameController gc)
+    {
+        // Limpiar filas antiguas
+        for (int i = _contenedorDesafios.childCount - 1; i >= 0; i--)
+            Destroy(_contenedorDesafios.GetChild(i).gameObject);
+
+        var defs = gc.Desafios.ObtenerTodos();
+        foreach (var def in defs)
+            CrearFilaDesafio(def, gc);
+    }
+
+    void CrearFilaDesafio(DefinicionDesafio def, GameController gc)
+    {
+        var estado = gc.Estado;
+        bool completado    = gc.Desafios.EstaCompletado(def.Id);
+        bool activo        = estado.DesafioActivoId == def.Id;
+        bool otroActivo    = !activo && !string.IsNullOrEmpty(estado.DesafioActivoId);
+        bool eraCumple     = estado.EraActual >= def.EraRequerida;
+        bool disponible    = !completado && !activo && !otroActivo && eraCumple;
+
+        // Contenedor de la fila
+        var fila = new GameObject("Fila_" + def.Id, typeof(RectTransform), typeof(VerticalLayoutGroup),
+            typeof(CanvasRenderer), typeof(Image));
+        fila.transform.SetParent(_contenedorDesafios, false);
+        var rtFila = fila.GetComponent<RectTransform>();
+        rtFila.sizeDelta = new Vector2(0, 180);
+        var vlg = fila.GetComponent<VerticalLayoutGroup>();
+        vlg.padding = new RectOffset(20, 20, 10, 10);
+        vlg.spacing = 4;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = false;
+
+        // Color de fondo según estado
+        var img = fila.GetComponent<Image>();
+        if (completado)        img.color = new Color(0.15f, 0.28f, 0.15f, 0.9f); // verde oscuro
+        else if (activo)       img.color = new Color(0.28f, 0.22f, 0.10f, 0.95f); // ámbar
+        else if (!eraCumple)   img.color = new Color(0.12f, 0.12f, 0.12f, 0.85f); // gris
+        else                   img.color = new Color(0.15f, 0.15f, 0.2f, 0.9f);   // azul oscuro
+
+        // Título
+        string prefijoTitulo = completado ? "<color=#77DD77>[OK] </color>" :
+                              activo     ? "<color=#FFCC33>[ACTIVO] </color>" :
+                              !eraCumple ? "<color=#888888>[Era " + def.EraRequerida + "] </color>" : "";
+        var goNombre = CrearTextoUI(fila.transform, "Nombre", prefijoTitulo + "<b>" + def.Nombre + "</b>", 24);
+        goNombre.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 32);
+
+        // Descripción corta
+        if (!string.IsNullOrEmpty(def.Descripcion))
+        {
+            var goDesc = CrearTextoUI(fila.transform, "Desc", def.Descripcion, 18);
+            goDesc.GetComponent<TextMeshProUGUI>().color = new Color(0.85f, 0.85f, 0.85f);
+            goDesc.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 26);
+        }
+
+        // Restricción
+        if (!string.IsNullOrEmpty(def.RestriccionDescripcion))
+        {
+            var goRestr = CrearTextoUI(fila.transform, "Restr",
+                "<color=#FF8866>Restricción:</color> " + def.RestriccionDescripcion, 17);
+            goRestr.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 24);
+        }
+
+        // Objetivo
+        if (!string.IsNullOrEmpty(def.ObjetivoDescripcion))
+        {
+            var goObj = CrearTextoUI(fila.transform, "Obj",
+                "<color=#88CCFF>Objetivo:</color> " + def.ObjetivoDescripcion, 17);
+            goObj.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 24);
+        }
+
+        // Recompensa
+        var goRec = CrearTextoUI(fila.transform, "Rec",
+            $"<color=#77DD77>Recompensa:</color> ×{def.BonusMultiplicador:F2} permanente", 17);
+        goRec.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 24);
+
+        // Si es el activo y tiene tiempo límite, mostrar contador
+        if (activo && estado.TiempoRestanteDesafio > 0)
+        {
+            int segs = Mathf.CeilToInt(estado.TiempoRestanteDesafio);
+            int min = segs / 60;
+            int resto = segs % 60;
+            var goTiempo = CrearTextoUI(fila.transform, "Tiempo",
+                $"<color=#FFCC33>Tiempo restante:</color> {min:D2}:{resto:D2}", 18);
+            goTiempo.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 26);
+        }
+
+        // Fila de acción (botón)
+        var goAccion = new GameObject("Accion", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        goAccion.transform.SetParent(fila.transform, false);
+        goAccion.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 42);
+        var hlg = goAccion.GetComponent<HorizontalLayoutGroup>();
+        hlg.spacing = 10;
+        hlg.childAlignment = TextAnchor.MiddleRight;
+        hlg.childForceExpandWidth = false;
+        hlg.childForceExpandHeight = true;
+        hlg.childControlWidth = true;
+        hlg.childControlHeight = true;
+
+        if (completado)
+        {
+            var goTxt = CrearTextoUI(goAccion.transform, "TxtEstado", "<color=#77DD77>COMPLETADO</color>", 20);
+            goTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineRight;
+            goTxt.AddComponent<LayoutElement>().preferredWidth = 220;
+        }
+        else if (activo)
+        {
+            var goBtn = CrearBotonUI(goAccion.transform, "BtnAbandonar", "ABANDONAR", 0, 0, 220, 42);
+            goBtn.AddComponent<LayoutElement>().preferredWidth = 220;
+            goBtn.GetComponent<Image>().color = new Color(0.5f, 0.25f, 0.25f);
+            goBtn.GetComponent<Button>().onClick.AddListener(() => OnClickAbandonarDesafio());
+        }
+        else if (!eraCumple)
+        {
+            var goTxt = CrearTextoUI(goAccion.transform, "TxtBloq",
+                "<color=#888888>Requiere Era " + def.EraRequerida + "</color>", 18);
+            goTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineRight;
+            goTxt.AddComponent<LayoutElement>().preferredWidth = 260;
+        }
+        else if (otroActivo)
+        {
+            var goTxt = CrearTextoUI(goAccion.transform, "TxtBloq",
+                "<color=#888888>Otro desafío en curso</color>", 18);
+            goTxt.GetComponent<TextMeshProUGUI>().alignment = TextAlignmentOptions.MidlineRight;
+            goTxt.AddComponent<LayoutElement>().preferredWidth = 260;
+        }
+        else // disponible
+        {
+            string idCaptura = def.Id;
+            var goBtn = CrearBotonUI(goAccion.transform, "BtnIniciar", "INICIAR", 0, 0, 220, 42);
+            goBtn.AddComponent<LayoutElement>().preferredWidth = 220;
+            goBtn.GetComponent<Image>().color = new Color(0.2f, 0.5f, 0.25f);
+            goBtn.GetComponent<Button>().onClick.AddListener(() => OnClickIniciarDesafio(idCaptura));
+        }
+    }
+
+    void OnClickIniciarDesafio(string id)
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return;
+        gc.IniciarDesafio(id);
+    }
+
+    void OnClickAbandonarDesafio()
+    {
+        var gc = GameController.Instance;
+        if (gc == null) return;
+        gc.AbandonarDesafio();
     }
 
     // ── Banner ────────────────────────────────────────────────────────
@@ -2557,6 +2893,7 @@ public class UIManager : MonoBehaviour
         Panel_Evolucion?.SetActive(pantalla == Panel_Evolucion);
         Panel_Misiones?.SetActive(pantalla == Panel_Misiones);
         Panel_Codice?.SetActive(pantalla == Panel_Codice);
+        Panel_Desafios?.SetActive(pantalla == Panel_Desafios);
         Panel_PopupNodo?.SetActive(false);
         Panel_PopupCodice?.SetActive(false);
         // Evento y EraDesbloqueada se manejan como overlays, no cierran el resto

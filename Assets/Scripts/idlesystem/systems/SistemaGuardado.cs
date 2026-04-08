@@ -48,6 +48,18 @@ namespace Terra.Systems
             // Revelación progresiva
             public double evMaximoAlcanzado;
             public int eraMaximaAlcanzada;
+
+            // Desafíos (T24)
+            public string desafiosCompletados;          // ids separados por |
+            public string desafioActivoId;              // id del desafío en curso (o "")
+            public float  tiempoRestanteDesafio;        // segundos restantes si tenía límite
+            public int    comprasEnDesafio;             // contador para restricción Minimalista
+            public double bonusDesafiosCompletados;     // multiplicador acumulado
+            public string pilaresBloqueadosDesafio;     // "1|0|0|1" (4 flags)
+            public bool   cadenasBloqueadasDesafio;
+            public bool   prestigeBloqueadoDesafio;
+            public bool   soloZona0Desafio;
+            public int    maxComprasDesafio;
         }
 
         public void Guardar(EstadoJuego estado)
@@ -133,6 +145,30 @@ namespace Terra.Systems
             // Revelación progresiva
             datos.evMaximoAlcanzado = estado.EVMaximoAlcanzado;
             datos.eraMaximaAlcanzada = estado.EraMaximaAlcanzada;
+
+            // ── Desafíos (T24) ────────────────────────────────────────
+            var partesDesafios = new System.Text.StringBuilder();
+            foreach (var kv in estado.Desafios)
+                if (kv.Value.Completado)
+                    partesDesafios.Append($"{kv.Key}|");
+            datos.desafiosCompletados = partesDesafios.ToString();
+
+            datos.desafioActivoId          = estado.DesafioActivoId ?? "";
+            datos.tiempoRestanteDesafio    = estado.TiempoRestanteDesafio;
+            datos.comprasEnDesafio         = estado.ComprasEnDesafio;
+            datos.bonusDesafiosCompletados = estado.BonusDesafiosCompletados;
+
+            var partesPilaresBloq = new System.Text.StringBuilder();
+            for (int i = 0; i < estado.PilaresBloqueadosDesafio.Length; i++)
+            {
+                if (i > 0) partesPilaresBloq.Append('|');
+                partesPilaresBloq.Append(estado.PilaresBloqueadosDesafio[i] ? '1' : '0');
+            }
+            datos.pilaresBloqueadosDesafio = partesPilaresBloq.ToString();
+            datos.cadenasBloqueadasDesafio = estado.CadenasBloqueadasDesafio;
+            datos.prestigeBloqueadoDesafio = estado.PrestigeBloqueadoDesafio;
+            datos.soloZona0Desafio         = estado.SoloZona0Desafio;
+            datos.maxComprasDesafio        = estado.MaxComprasDesafio;
 
             string json = JsonUtility.ToJson(datos);
             PlayerPrefs.SetString(KEY_GUARDADO, json);
@@ -268,6 +304,42 @@ namespace Terra.Systems
                         slot++;
                     }
                 }
+
+                // ── Cargar desafíos (T24) ─────────────────────────────
+                if (!string.IsNullOrEmpty(datos.desafiosCompletados))
+                    foreach (var id in datos.desafiosCompletados.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(id)) continue;
+                        if (estado.Desafios.TryGetValue(id, out var est))
+                            est.Completado = true;
+                    }
+
+                estado.DesafioActivoId       = string.IsNullOrEmpty(datos.desafioActivoId) ? null : datos.desafioActivoId;
+                estado.TiempoRestanteDesafio = datos.tiempoRestanteDesafio;
+                estado.ComprasEnDesafio      = datos.comprasEnDesafio;
+
+                // Si había un desafío activo, marcar su EstadoDesafio como Activo
+                if (!string.IsNullOrEmpty(estado.DesafioActivoId)
+                    && estado.Desafios.TryGetValue(estado.DesafioActivoId, out var estActivo))
+                {
+                    estActivo.Activo = true;
+                }
+
+                // El bono acumulado se recalcula desde RecalcularBonusAcumulado tras cargar,
+                // pero guardamos el valor por si acaso
+                if (datos.bonusDesafiosCompletados > 0)
+                    estado.BonusDesafiosCompletados = datos.bonusDesafiosCompletados;
+
+                if (!string.IsNullOrEmpty(datos.pilaresBloqueadosDesafio))
+                {
+                    var partes = datos.pilaresBloqueadosDesafio.Split('|');
+                    for (int i = 0; i < partes.Length && i < estado.PilaresBloqueadosDesafio.Length; i++)
+                        estado.PilaresBloqueadosDesafio[i] = partes[i] == "1";
+                }
+                estado.CadenasBloqueadasDesafio = datos.cadenasBloqueadasDesafio;
+                estado.PrestigeBloqueadoDesafio = datos.prestigeBloqueadoDesafio;
+                estado.SoloZona0Desafio         = datos.soloZona0Desafio;
+                estado.MaxComprasDesafio        = datos.maxComprasDesafio;
 
                 return true;
             }

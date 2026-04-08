@@ -588,20 +588,20 @@ TAREA 23 - Sistema de desafios [COMPLETADA]
 
 ------------------------------------------------------------------------
 
-TAREA 24 - Guardar + UI desafios
+TAREA 24 - Guardar + UI desafios [COMPLETADA]
   Prioridad: MEDIA
   Depende de: T23
 
   SistemaGuardado.cs:
-    - Serializar desafios completados + desafio activo
+    - Serializar desafios completados + desafio activo + flags de restriccion
 
   UIManager.cs:
     - Panel_Desafios: lista de challenges con estado (bloqueado/disponible/completado)
     - Cada uno muestra: restriccion, objetivo, recompensa
-    - Boton iniciar
-    - Visible desde Era 5
+    - Boton iniciar / abandonar
+    - Visible desde Era 5 (Btn_AbrirDesafios)
 
-  Trabajo Unity: crear Panel_Desafios
+  Trabajo Unity: crear Panel_Desafios + Btn_AbrirDesafios y asignarlos en el Inspector
 
 
 ================================================================================

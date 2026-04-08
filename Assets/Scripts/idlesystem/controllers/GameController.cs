@@ -205,6 +205,9 @@ namespace Terra.Controllers
             Arbol.ComprobarDesbloqueos();
             Cadenas.ComprobarDesbloqueos();
 
+            // Recalcular bono acumulado de desafíos desde el estado cargado
+            Desafios.RecalcularBonusAcumulado();
+
             // Comprobar racha diaria
             Racha.ComprobarConexionDiaria();
 
@@ -296,7 +299,16 @@ namespace Terra.Controllers
         void Debug_AñadirEV() => Estado.EnergiaVital += 1_000_000;
 
         [ContextMenu("DEBUG → Avanzar era")]
-        void Debug_AvanzarEra() => Eras.AvanzarEra();
+        void Debug_AvanzarEra()
+        {
+            // Fuerza el avance sin pasar por PuedeAvanzar() — los handlers
+            // suscritos a EventoEraAvanzada reconectan mejoras/sinergias/árbol.
+            if (Estado.EraActual >= 8) return;
+            Estado.EraActual++;
+            Cadenas.ComprobarDesbloqueos();
+            EventBus.Publicar(new EventoEraAvanzada(Estado.EraActual));
+            Debug.Log($"[DEBUG] Era forzada a: {Estado.EraActual}");
+        }
 
         [ContextMenu("DEBUG → Forzar prestige Extinción")]
         void Debug_Prestige() => Prestige.Realizar(TipoPrestige.Extincion);
