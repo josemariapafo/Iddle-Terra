@@ -43,6 +43,10 @@ namespace Terra.Systems
             public string misionesCompletadas;
             // Nodos Códice Fósil: id:nivel separados por |
             public string nodosCodice;
+            // Nodos Códice Genético (T25): id:nivel separados por |
+            public string nodosCodiceGenetico;
+            // Bifurcaciones (T26): pilar:opcion separados por |  (pilar = 0..3, opcion = 0|1)
+            public string bifurcaciones;
             // Automatizaciones activas: "1|0|1|0|1" (5 flags)
             public string automatizacionesActivas;
             // Revelación progresiva
@@ -129,6 +133,20 @@ namespace Terra.Systems
                 if (kv.Value.Nivel > 0)
                     partesCodice.Append($"{kv.Key}:{kv.Value.Nivel}|");
             datos.nodosCodice = partesCodice.ToString();
+
+            // Serializar nodos Códice Genético
+            var partesCodiceGen = new System.Text.StringBuilder();
+            foreach (var kv in estado.NodosCodiceGenetico)
+                if (kv.Value.Nivel > 0)
+                    partesCodiceGen.Append($"{kv.Key}:{kv.Value.Nivel}|");
+            datos.nodosCodiceGenetico = partesCodiceGen.ToString();
+
+            // Serializar bifurcaciones (solo las que tienen opción elegida ≠ -1)
+            var partesBif = new System.Text.StringBuilder();
+            foreach (var kv in estado.Bifurcaciones)
+                if (kv.Value >= 0)
+                    partesBif.Append($"{(int)kv.Key}:{kv.Value}|");
+            datos.bifurcaciones = partesBif.ToString();
 
             // Serializar automatizaciones activas
             if (estado.AutomatizacionesActivas != null)
@@ -260,6 +278,34 @@ namespace Terra.Systems
                         string id = kv[0];
                         if (int.TryParse(kv[1], out int nivel) && estado.NodosCodice.ContainsKey(id))
                             estado.NodosCodice[id].Nivel = nivel;
+                    }
+
+                // Cargar nodos Códice Genético
+                if (!string.IsNullOrEmpty(datos.nodosCodiceGenetico))
+                    foreach (var parte in datos.nodosCodiceGenetico.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(parte)) continue;
+                        var kv = parte.Split(':');
+                        if (kv.Length != 2) continue;
+                        string id = kv[0];
+                        if (int.TryParse(kv[1], out int nivel) && estado.NodosCodiceGenetico.ContainsKey(id))
+                            estado.NodosCodiceGenetico[id].Nivel = nivel;
+                    }
+
+                // Cargar bifurcaciones
+                if (!string.IsNullOrEmpty(datos.bifurcaciones))
+                    foreach (var parte in datos.bifurcaciones.Split('|'))
+                    {
+                        if (string.IsNullOrEmpty(parte)) continue;
+                        var kv = parte.Split(':');
+                        if (kv.Length != 2) continue;
+                        if (int.TryParse(kv[0], out int pilar)
+                            && int.TryParse(kv[1], out int opcion)
+                            && pilar >= 0 && pilar <= 3
+                            && (opcion == 0 || opcion == 1))
+                        {
+                            estado.Bifurcaciones[(TipoPilar)pilar] = opcion;
+                        }
                     }
 
                 // Cargar automatizaciones activas

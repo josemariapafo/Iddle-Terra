@@ -236,6 +236,11 @@ namespace Terra.State
         public Dictionary<string, EstadoNodoCodice> NodosCodice
             = new Dictionary<string, EstadoNodoCodice>();
 
+        // Códice Genético (T25, Era 6+). Misma estructura nodo, moneda diferente (Genes).
+        // Se resetea SOLO con Big Bang.
+        public Dictionary<string, EstadoNodoCodice> NodosCodiceGenetico
+            = new Dictionary<string, EstadoNodoCodice>();
+
         // Bifurcaciones evolutivas (pilar -> opción 0 o 1, -1 = no elegida)
         public Dictionary<TipoPilar, int> Bifurcaciones
             = new Dictionary<TipoPilar, int>();

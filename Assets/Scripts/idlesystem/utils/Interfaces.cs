@@ -53,7 +53,22 @@ namespace Terra.Core
         ReduccionTapsCombo,     // -N taps para activar combo
         DuracionCombo,          // +Xs duración combo
         MultiplicadorCombo,     // +X multiplicador combo
-        AutoTap                 // auto-tap (N taps por activación)
+        AutoTap,                // auto-tap (N taps por activación)
+
+        // ── Códice Genético: Adaptación ── (T25, Era 6+)
+        BonusCapCadenaGen,      // +X% cap cadenas (multiplicativo al de fósil)
+        ReduccionReqEslabones,  // -N niveles requisito para desbloquear sub-mejoras cadena
+        BonusGenesPrestige,     // +X% genes ganados al glaciar
+
+        // ── Códice Genético: Mutación ──
+        BonusEfectividadSinergias, // +X% multiplicador de sinergias (multiplicativo)
+        ReduccionCooldownEventos,  // -X% cooldown entre eventos
+        OpcionEventoExtra,         // desbloquea 4ª opción en eventos
+
+        // ── Códice Genético: Simbiosis ──
+        BonusPilaresBalanceados,   // +X% EV/s cuando 3+ pilares tienen nivel cercano
+        MultiplicadorGlobalGen,    // +X% EV/s global (capstone genético)
+        BonusMultiplicadoresBifurcacion // +X% a los multiplicadores de bifurcación
     }
 
     public enum TipoEslabon { Generacion, Procesamiento, Distribucion }
@@ -63,6 +78,12 @@ namespace Terra.Core
     public enum TipoRecompensa { EVInstante, MultiplicadorTemporal, NivelNodoGratis, FosilesExtra }
 
     public enum TipoCodice { Abundancia, Eficiencia, Dominio }
+
+    /// <summary>
+    /// Ramas del Códice Genético (Era 6). Se gasta Genes.
+    /// Se resetea solo con Big Bang (no con Glaciación).
+    /// </summary>
+    public enum TipoCodiceGenetico { Adaptacion, Mutacion, Simbiosis }
 
     /// <summary>
     /// Automatizaciones de compra. Cada una de pilar compra periódicamente la

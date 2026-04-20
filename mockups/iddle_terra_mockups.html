@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Iddle Terra — Design Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep: #050814;
+    --bg-mid:  #0D1428;
+    --bg-surf: #1A2340;
+    --stroke:  #2B3556;
+    --text:    #E8E8F0;
+    --text-dim:#7D87A8;
+    --magma:   #E85D2F;
+    --magma-g: #FF8A3D;
+    --hydro:   #4FC3F7;
+    --atmos:   #A8DADC;
+    --life:    #6EE089;
+    --gold:    #D4AF37;
+    --violet:  #B57BFF;
+    --danger:  #FF4D6D;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg-deep);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+  body{min-height:100vh;position:relative}
+
+  /* Fondo cósmico persistente */
+  .cosmos{
+    position:fixed;inset:0;z-index:-1;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(181,123,255,.08), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 80% 90%, rgba(79,195,247,.06), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 50% 50%, rgba(232,93,47,.04), transparent 70%),
+      var(--bg-deep);
+  }
+  .stars{position:fixed;inset:0;z-index:-1;pointer-events:none}
+  .stars span{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;opacity:.6;animation:twinkle 4s infinite}
+  @keyframes twinkle{0%,100%{opacity:.2}50%{opacity:.9}}
+
+  /* Nav principal (superior) */
+  nav.topbar{
+    position:sticky;top:0;z-index:50;
+    padding:14px 24px;display:flex;align-items:center;gap:12px;
+    background:linear-gradient(to bottom, rgba(5,8,20,.92), rgba(5,8,20,.65));
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--stroke);
+  }
+  nav.topbar .logo{font-family:'Cinzel';font-weight:700;font-size:20px;letter-spacing:3px;background:linear-gradient(135deg,var(--magma),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  nav.topbar .spacer{flex:1}
+  nav.topbar button{
+    background:transparent;color:var(--text-dim);border:1px solid transparent;
+    padding:8px 14px;border-radius:999px;cursor:pointer;font-family:inherit;font-size:13px;
+    transition:.2s;letter-spacing:.5px;
+  }
+  nav.topbar button:hover{color:var(--text);border-color:var(--stroke)}
+  nav.topbar button.active{color:var(--text);background:rgba(232,93,47,.12);border-color:var(--magma)}
+
+  main{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+  .screen{display:none;animation:fade .4s ease}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  h1.screen-title{font-family:'Cinzel';font-weight:700;font-size:28px;letter-spacing:4px;margin-bottom:6px}
+  p.screen-sub{color:var(--text-dim);font-size:14px;margin-bottom:28px;letter-spacing:.5px}
+
+  .panel{
+    background:linear-gradient(180deg, rgba(26,35,64,.6), rgba(13,20,40,.6));
+    border:1px solid var(--stroke);
+    border-radius:18px;padding:24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+
+  .note{font-size:12px;color:var(--text-dim);font-style:italic;margin-top:8px;letter-spacing:.3px}
+
+  /* ============ GÉNESIS (home) ============ */
+  .genesis{display:grid;grid-template-columns:1fr 420px;gap:24px;align-items:start}
+  .planet-stage{
+    position:relative;aspect-ratio:1;
+    background:radial-gradient(circle at 50% 55%, rgba(181,123,255,.08), transparent 60%);
+    border-radius:24px;overflow:hidden;
+    border:1px solid var(--stroke);
+    min-height:600px;
+  }
+  .orbit-ring{
+    position:absolute;inset:10%;
+    border:1px dashed rgba(255,255,255,.06);border-radius:50%;
+    animation:rotate 80s linear infinite;
+  }
+  .orbit-ring.inner{inset:22%;animation-duration:60s;animation-direction:reverse}
+  @keyframes rotate{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+  .planet{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:260px;height:260px;border-radius:50%;
+    background:
+      radial-gradient(circle at 30% 30%, #FFE9C7 0%, #E85D2F 15%, #8B3410 45%, #3D1608 85%),
+      #2D1B12;
+    box-shadow:
+      0 0 60px rgba(232,93,47,.35),
+      0 0 120px rgba(232,93,47,.2),
+      inset -20px -30px 60px rgba(0,0,0,.6),
+      inset 10px 15px 40px rgba(255,200,140,.2);
+    animation:spin 40s linear infinite;
+  }
+  @keyframes spin{from{background-position:0 0}to{background-position:300px 0}}
+
+  .tap-ring{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:310px;height:310px;border-radius:50%;
+    border:2px solid rgba(232,93,47,.3);
+    box-shadow:0 0 40px rgba(232,93,47,.15);
+    animation:pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}50%{transform:translate(-50%,-50%) scale(1.06);opacity:.5}}
+
+  /* Iconos orbitales */
+  .orbit-icon{
+    position:absolute;width:56px;height:56px;border-radius:50%;
+    background:linear-gradient(180deg,rgba(26,35,64,.9),rgba(13,20,40,.9));
+    border:1px solid var(--stroke);
+    display:grid;place-items:center;font-size:22px;cursor:pointer;
+    transition:.25s;
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+  .orbit-icon:hover{transform:scale(1.1);border-color:var(--magma);box-shadow:0 0 20px rgba(232,93,47,.4)}
+  .orbit-icon .label{
+    position:absolute;top:100%;left:50%;transform:translateX(-50%) translateY(4px);
+    font-size:10px;color:var(--text);letter-spacing:2px;white-space:nowrap;
+    background:rgba(5,8,20,.8);padding:3px 8px;border-radius:4px;
+    opacity:0;transition:.2s;pointer-events:none;
+  }
+  .orbit-icon:hover .label{opacity:1}
+
+  /* Stats en panel lateral */
+  .hud{display:flex;flex-direction:column;gap:14px}
+  .hud .card{
+    background:linear-gradient(180deg, rgba(26,35,64,.7), rgba(13,20,40,.7));
+    border:1px solid var(--stroke);border-radius:14px;padding:16px;
+  }
+  .hud h3{font-family:'Cinzel';font-size:13px;letter-spacing:3px;color:var(--text-dim);margin-bottom:12px}
+  .resource-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .resource-row:last-child{border-bottom:0}
+  .resource-row .name{font-size:13px;display:flex;align-items:center;gap:8px}
+  .resource-row .value{font-family:'JetBrains Mono';font-size:14px;font-weight:600}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .dot.tierra{background:var(--magma);box-shadow:0 0 6px var(--magma)}
+  .dot.oceano{background:var(--hydro);box-shadow:0 0 6px var(--hydro)}
+  .dot.atmos{background:var(--atmos);box-shadow:0 0 6px var(--atmos)}
+  .dot.vida{background:var(--life);box-shadow:0 0 6px var(--life)}
+  .dot.ev{background:var(--violet);box-shadow:0 0 6px var(--violet)}
+
+  .era-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 14px;border-radius:999px;
+    background:linear-gradient(90deg, rgba(232,93,47,.2), rgba(212,175,55,.1));
+    border:1px solid rgba(232,93,47,.4);
+    font-family:'Cinzel';font-size:11px;letter-spacing:3px;
+  }
+
+  .missions-mini{display:flex;flex-direction:column;gap:8px}
+  .mission-slot{
+    display:flex;align-items:center;gap:12px;padding:10px 12px;
+    background:rgba(5,8,20,.5);border:1px solid var(--stroke);border-radius:10px;
+  }
+  .mission-slot .icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold),var(--magma));display:grid;place-items:center;font-size:16px}
+  .mission-slot .info{flex:1;font-size:12px}
+  .mission-slot .info .title{font-weight:600}
+  .mission-slot .info .progress{color:var(--text-dim);font-family:'JetBrains Mono'}
+  .bar{height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-top:4px}
+  .bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--magma),var(--gold))}
+
+  /* ============ LITOSFERA (cadena Tierra) ============ */
+  .chain-grid{display:grid;grid-template-columns:260px 1fr 320px;gap:20px;align-items:start}
+  .pillar-list{display:flex;flex-direction:column;gap:10px}
+  .pillar-item{
+    padding:14px;border-radius:12px;border:1px solid var(--stroke);
+    background:rgba(13,20,40,.5);cursor:pointer;transition:.2s;
+  }
+  .pillar-item:hover{border-color:var(--stroke)}
+  .pillar-item.active{border-color:var(--magma);background:linear-gradient(90deg,rgba(232,93,47,.18),rgba(13,20,40,.5))}
+  .pillar-item .head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .pillar-item .head .ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:14px}
+  .pillar-item.tierra .ico{background:rgba(232,93,47,.2);color:var(--magma)}
+  .pillar-item.oceano .ico{background:rgba(79,195,247,.2);color:var(--hydro)}
+  .pillar-item.atmos .ico{background:rgba(168,218,220,.2);color:var(--atmos)}
+  .pillar-item.vida .ico{background:rgba(110,224,137,.2);color:var(--life)}
+  .pillar-item .name{font-family:'Cinzel';font-size:12px;letter-spacing:2px}
+  .pillar-item .sub{font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono'}
+  .pillar-item.locked{opacity:.4;filter:grayscale(.8)}
+
+  .chain-flow{
+    min-height:500px;position:relative;
+    background:
+      radial-gradient(ellipse at center, rgba(232,93,47,.08), transparent 70%),
+      linear-gradient(180deg, rgba(45,27,18,.3), rgba(13,20,40,.5));
+    border:1px solid var(--stroke);border-radius:18px;padding:26px;
+    overflow:hidden;
+  }
+  .chain-flow::before{
+    content:'';position:absolute;inset:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><path d='M0 30 L30 0 L60 30 L30 60 Z' fill='none' stroke='%23E85D2F' stroke-opacity='.04' stroke-width='1'/></svg>");
+    pointer-events:none;
+  }
+  .chain-title{font-family:'Cinzel';letter-spacing:4px;font-size:16px;color:var(--magma);margin-bottom:4px;position:relative}
+  .chain-subtitle{font-size:12px;color:var(--text-dim);margin-bottom:22px;position:relative}
+
+  .eslabones{display:flex;flex-direction:column;gap:14px;position:relative}
+  .eslabon{
+    padding:18px;border-radius:14px;border:1px solid var(--stroke);
+    background:rgba(5,8,20,.6);position:relative;
+    display:grid;grid-template-columns:60px 1fr auto;gap:16px;align-items:center;
+  }
+  .eslabon.bottleneck{
+    border-color:var(--danger);
+    background:linear-gradient(90deg, rgba(255,77,109,.15), rgba(5,8,20,.6));
+    animation:warn 2s infinite;
+  }
+  @keyframes warn{0%,100%{box-shadow:0 0 0 rgba(255,77,109,.4)}50%{box-shadow:0 0 24px rgba(255,77,109,.3)}}
+  .eslabon .n{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--magma),var(--gold));display:grid;place-items:center;font-family:'Cinzel';font-weight:700;font-size:18px}
+  .eslabon .info .t{font-family:'Cinzel';font-size:14px;letter-spacing:2px;margin-bottom:4px}
+  .eslabon .info .d{font-size:11px;color:var(--text-dim)}
+  .eslabon .info .bar{margin-top:8px}
+  .eslabon .stat{text-align:right;font-family:'JetBrains Mono';font-size:13px}
+  .eslabon .stat .val{color:var(--magma-g);font-weight:600}
+  .eslabon .stat .cap{color:var(--text-dim);font-size:10px}
+
+  .flow-arrow{text-align:center;color:var(--text-dim);font-size:18px;letter-spacing:10px;margin:2px 0}
+
+  .bottleneck-badge{
+    position:absolute;top:-8px;right:14px;
+    background:var(--danger);color:#fff;font-size:10px;padding:3px 10px;border-radius:999px;
+    letter-spacing:2px;font-weight:600;
+  }
+
+  .chain-side{display:flex;flex-direction:column;gap:14px}
+  .side-card{background:rgba(13,20,40,.5);border:1px solid var(--stroke);border-radius:12px;padding:16px}
+  .side-card h4{font-family:'Cinzel';font-size:11px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px}
+  .upgrade-btn{
+    width:100%;padding:12px;border-radius:10px;border:1px solid var(--magma);
+    background:linear-gradient(180deg,rgba(232,93,47,.2),rgba(232,93,47,.05));
+    color:var(--text);font-family:'Cinzel';letter-spacing:2px;font-size:12px;
+    cursor:pointer;transition:.2s;
+  }
+  .upgrade-btn:hover{background:linear-gradient(180deg,rgba(232,93,47,.4),rgba(232,93,47,.1))}
+  .upgrade-btn .cost{display:block;font-size:10px;color:var(--text-dim);margin-top:4px;font-family:'JetBrains Mono';letter-spacing:0}
+
+  /* ============ ÁRBOL SINÁPTICO (evolución) ============ */
+  .tree-wrap{position:relative;min-height:700px}
+  .tree-svg{width:100%;height:700px}
+  .node-info{
+    position:absolute;top:20px;right:20px;width:300px;
+    background:rgba(13,20,40,.92);border:1px solid var(--violet);border-radius:14px;padding:18px;
+    box-shadow:0 0 30px rgba(181,123,255,.2);
+    backdrop-filter:blur(10px);
+  }
+  .node-info .tier{font-size:10px;letter-spacing:3px;color:var(--violet);font-family:'Cinzel'}
+  .node-info h3{font-family:'Cinzel';font-size:18px;letter-spacing:2px;margin:4px 0 10px}
+  .node-info p{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:14px}
+  .node-info .effect{background:rgba(181,123,255,.1);border-left:3px solid var(--violet);padding:8px 12px;font-size:12px;margin-bottom:14px}
+
+  /* ============ SENDAS (misiones) ============ */
+  .missions-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .mission-big{
+    background:
+      linear-gradient(180deg, rgba(212,175,55,.08), rgba(13,20,40,.6));
+    border:1px solid rgba(212,175,55,.3);border-radius:18px;padding:22px;
+    position:relative;overflow:hidden;
+  }
+  .mission-big::before{
+    content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;
+    background:radial-gradient(circle, rgba(212,175,55,.15), transparent 70%);
+    border-radius:50%;
+  }
+  .mission-big .rarity{font-size:10px;letter-spacing:4px;color:var(--gold);font-family:'Cinzel'}
+  .mission-big h3{font-family:'Cinzel';font-size:18px;letter-spacing:2px;margin:4px 0 10px;position:relative}
+  .mission-big p{font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:18px;position:relative}
+  .reward-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .reward-chip{background:rgba(5,8,20,.6);border:1px solid var(--stroke);padding:6px 10px;border-radius:8px;font-size:11px;font-family:'JetBrains Mono'}
+  .reward-chip.gold{border-color:var(--gold);color:var(--gold)}
+  .reward-chip.violet{border-color:var(--violet);color:var(--violet)}
+
+  /* ============ ARCHIVO FÓSIL ============ */
+  .codex-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+  .codex-branch{
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(212,175,55,.1), transparent 70%),
+      linear-gradient(180deg, rgba(26,18,8,.6), rgba(13,20,40,.6));
+    border:1px solid rgba(212,175,55,.3);border-radius:18px;padding:22px;
+    min-height:520px;
+    position:relative;
+  }
+  .codex-branch h3{font-family:'Cinzel';letter-spacing:4px;font-size:15px;text-align:center;margin-bottom:6px;color:var(--gold)}
+  .codex-branch .sub{text-align:center;font-size:11px;color:var(--text-dim);margin-bottom:20px;font-style:italic}
+  .fossil-node{
+    display:flex;gap:12px;padding:12px;border-radius:10px;
+    background:rgba(5,8,20,.5);border:1px solid var(--stroke);
+    margin-bottom:10px;cursor:pointer;transition:.2s;align-items:center;
+  }
+  .fossil-node:hover{border-color:var(--gold)}
+  .fossil-node.owned{border-color:var(--gold);background:linear-gradient(90deg,rgba(212,175,55,.15),rgba(5,8,20,.5))}
+  .fossil-node.locked{opacity:.4}
+  .fossil-node .icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),rgba(212,175,55,.3));display:grid;place-items:center;font-size:16px;color:#000}
+  .fossil-node .t{flex:1;font-size:12px}
+  .fossil-node .t .title{font-family:'Cinzel';letter-spacing:1px;margin-bottom:2px}
+  .fossil-node .t .desc{color:var(--text-dim);font-size:11px}
+  .fossil-node .cost{font-family:'JetBrains Mono';font-size:11px;color:var(--violet)}
+
+  /* ============ AUTÓMATA ============ */
+  .auto-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .auto-card{
+    background:
+      linear-gradient(135deg, rgba(79,195,247,.06), rgba(13,20,40,.6));
+    border:1px solid var(--stroke);border-radius:16px;padding:20px;
+    position:relative;
+  }
+  .auto-card .head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .auto-card .head .ico{
+    width:48px;height:48px;border-radius:12px;
+    background:linear-gradient(135deg, var(--hydro), #2288AA);
+    display:grid;place-items:center;font-size:22px;
+    box-shadow:0 0 20px rgba(79,195,247,.3);
+  }
+  .auto-card h3{font-family:'Cinzel';font-size:14px;letter-spacing:2px}
+  .auto-card .status{font-size:10px;color:var(--text-dim);letter-spacing:2px;margin-top:2px}
+  .auto-card p{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:14px}
+
+  .toggle-row{display:flex;gap:6px;background:rgba(5,8,20,.6);border-radius:10px;padding:4px;border:1px solid var(--stroke)}
+  .toggle-btn{
+    flex:1;padding:8px;border:0;background:transparent;color:var(--text-dim);
+    font-family:'Cinzel';font-size:11px;letter-spacing:2px;border-radius:8px;cursor:pointer;transition:.2s;
+  }
+  .toggle-btn.active{background:linear-gradient(135deg,var(--hydro),#2288AA);color:#fff}
+  .toggle-btn.smart.active{background:linear-gradient(135deg,var(--violet),#6A4DA8)}
+
+  /* ============ UMBRAL CÓSMICO (prestige) ============ */
+  .prestige-stage{
+    position:relative;min-height:600px;border-radius:20px;overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 60%, rgba(232,93,47,.4), transparent 50%),
+      radial-gradient(circle at 50% 60%, rgba(181,123,255,.3), transparent 70%),
+      radial-gradient(circle at 50% 60%, rgba(212,175,55,.2), transparent 85%),
+      var(--bg-deep);
+    padding:60px 40px;display:flex;flex-direction:column;align-items:center;gap:30px;
+  }
+  .bigbang-core{
+    width:160px;height:160px;border-radius:50%;
+    background:
+      radial-gradient(circle, #FFFBE6 0%, #FFC87A 30%, #E85D2F 55%, #B57BFF 85%);
+    box-shadow:
+      0 0 80px rgba(255,200,130,.6),
+      0 0 160px rgba(232,93,47,.4),
+      0 0 240px rgba(181,123,255,.3);
+    animation:bang 4s ease-in-out infinite;
+  }
+  @keyframes bang{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+  .prestige-title{font-family:'Cinzel';font-weight:700;font-size:32px;letter-spacing:8px;text-align:center;background:linear-gradient(135deg,var(--gold),var(--magma),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .prestige-sub{text-align:center;color:var(--text-dim);font-size:14px;max-width:600px;line-height:1.6;font-style:italic}
+
+  .prestige-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:720px}
+  .preview-card{background:rgba(13,20,40,.7);border:1px solid rgba(212,175,55,.3);border-radius:14px;padding:18px;text-align:center;backdrop-filter:blur(6px)}
+  .preview-card .label{font-size:10px;letter-spacing:3px;color:var(--text-dim);font-family:'Cinzel'}
+  .preview-card .val{font-family:'JetBrains Mono';font-size:24px;font-weight:600;color:var(--gold);margin-top:8px}
+  .preview-card .gain{font-size:11px;color:var(--life);margin-top:4px}
+
+  .big-btn{
+    padding:18px 48px;border-radius:999px;border:2px solid var(--gold);
+    background:linear-gradient(135deg, rgba(212,175,55,.2), rgba(232,93,47,.1));
+    color:var(--text);font-family:'Cinzel';letter-spacing:5px;font-size:14px;
+    cursor:pointer;transition:.3s;
+    box-shadow:0 0 30px rgba(212,175,55,.2);
+  }
+  .big-btn:hover{box-shadow:0 0 50px rgba(212,175,55,.5);transform:scale(1.03)}
+
+  /* ============ PULSO (eventos) ============ */
+  .event-overlay{
+    display:flex;align-items:center;justify-content:center;padding:40px 20px;
+    background:radial-gradient(ellipse at center, rgba(181,123,255,.1), transparent 60%);
+    min-height:600px;
+  }
+  .event-modal{
+    max-width:640px;width:100%;
+    background:
+      linear-gradient(180deg, rgba(26,35,64,.95), rgba(13,20,40,.95));
+    border:1px solid var(--violet);
+    border-radius:22px;padding:36px;
+    box-shadow:0 0 60px rgba(181,123,255,.3);
+    position:relative;
+  }
+  .event-modal::before{
+    content:'';position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+    width:60px;height:60px;border-radius:50%;
+    background:radial-gradient(circle, var(--violet), transparent 70%);
+    animation:pulseEv 2s ease-in-out infinite;
+  }
+  @keyframes pulseEv{0%,100%{transform:translateX(-50%) scale(1);opacity:.8}50%{transform:translateX(-50%) scale(1.4);opacity:.3}}
+
+  .event-kind{font-family:'Cinzel';font-size:10px;letter-spacing:5px;color:var(--violet);text-align:center;margin-bottom:8px}
+  .event-title{font-family:'Cinzel';font-size:24px;letter-spacing:3px;text-align:center;margin-bottom:18px}
+  .event-story{color:var(--text-dim);font-size:14px;line-height:1.7;text-align:center;margin-bottom:28px;font-style:italic}
+
+  .event-options{display:flex;flex-direction:column;gap:12px}
+  .event-option{
+    padding:16px 18px;border-radius:12px;border:1px solid var(--stroke);
+    background:rgba(5,8,20,.5);cursor:pointer;transition:.2s;text-align:left;
+  }
+  .event-option:hover{border-color:var(--violet);background:linear-gradient(90deg,rgba(181,123,255,.1),rgba(5,8,20,.5))}
+  .event-option .choice{font-family:'Cinzel';font-size:13px;letter-spacing:2px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .event-option .choice .num{background:rgba(181,123,255,.2);color:var(--violet);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+  .event-option .consequences{font-size:11px;color:var(--text-dim)}
+  .event-option .consequences .good{color:var(--life)}
+  .event-option .consequences .bad{color:var(--danger)}
+
+  /* ============ Utilidades globales ============ */
+  .legend{margin-top:24px;padding:16px;background:rgba(13,20,40,.5);border:1px dashed var(--stroke);border-radius:12px;font-size:12px;color:var(--text-dim);line-height:1.7}
+  .legend b{color:var(--text)}
+  .legend code{background:rgba(5,8,20,.6);padding:2px 6px;border-radius:4px;color:var(--magma);font-family:'JetBrains Mono';font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="cosmos"></div>
+<div class="stars" id="stars"></div>
+
+<nav class="topbar">
+  <div class="logo">IDDLE TERRA</div>
+  <div class="spacer"></div>
+  <button class="active" data-s="genesis">GÉNESIS</button>
+  <button data-s="litosfera">LITOSFERA</button>
+  <button data-s="tree">SINÁPTICO</button>
+  <button data-s="sendas">SENDAS</button>
+  <button data-s="codex">ARCHIVO FÓSIL</button>
+  <button data-s="auto">AUTÓMATA</button>
+  <button data-s="umbral">UMBRAL</button>
+  <button data-s="pulso">PULSO</button>
+</nav>
+
+<main>
+
+<!-- ==================== GÉNESIS ==================== -->
+<section class="screen active" id="genesis">
+  <h1 class="screen-title">GÉNESIS</h1>
+  <p class="screen-sub">El vacío despierta. Tu esencia moldea una esfera incandescente.</p>
+
+  <div class="genesis">
+    <div class="planet-stage">
+      <div class="orbit-ring"></div>
+      <div class="orbit-ring inner"></div>
+      <div class="tap-ring"></div>
+      <div class="planet"></div>
+
+      <!-- Iconos orbitales alrededor -->
+      <div class="orbit-icon" style="top:6%;left:45%" title="Litosfera">🌋<span class="label">LITOSFERA</span></div>
+      <div class="orbit-icon" style="top:20%;right:6%" title="Sinaptico">🧬<span class="label">SINÁPTICO</span></div>
+      <div class="orbit-icon" style="top:50%;right:3%" title="Sendas">📜<span class="label">SENDAS</span></div>
+      <div class="orbit-icon" style="bottom:20%;right:8%" title="Archivo">🦴<span class="label">ARCHIVO</span></div>
+      <div class="orbit-icon" style="bottom:6%;left:48%" title="Autómata">⚙<span class="label">AUTÓMATA</span></div>
+      <div class="orbit-icon" style="bottom:20%;left:6%" title="Umbral">✦<span class="label">UMBRAL</span></div>
+      <div class="orbit-icon" style="top:50%;left:3%" title="Pulso">◐<span class="label">PULSO</span></div>
+      <div class="orbit-icon" style="top:20%;left:6%" title="Hidrosfera (locked)">🌊<span class="label">HIDROSFERA</span></div>
+    </div>
+
+    <aside class="hud">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3 style="margin:0">ERA ACTUAL</h3>
+          <span class="era-badge">◆ ERA I · PIEDRA</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.6">Las entrañas del planeta hierven. La litosfera se estabiliza antes del despertar de los océanos.</div>
+        <div class="bar" style="margin-top:12px"><span style="width:34%"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-family:'JetBrains Mono';color:var(--text-dim);margin-top:6px">
+          <span>34% → Era II</span><span>1.2K / 3.5K EV</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>RECURSOS</h3>
+        <div class="resource-row">
+          <span class="name"><span class="dot tierra"></span>Energía Telúrica</span>
+          <span class="value">847.2<span style="color:var(--text-dim);font-size:11px">/s</span></span>
+        </div>
+        <div class="resource-row">
+          <span class="name"><span class="dot oceano"></span>Flujo Hídrico</span>
+          <span class="value" style="color:var(--text-dim)">— bloqueado</span>
+        </div>
+        <div class="resource-row">
+          <span class="name"><span class="dot atmos"></span>Presión Atmosférica</span>
+          <span class="value" style="color:var(--text-dim)">— bloqueado</span>
+        </div>
+        <div class="resource-row">
+          <span class="name"><span class="dot vida"></span>Chispa Vital</span>
+          <span class="value" style="color:var(--text-dim)">— bloqueado</span>
+        </div>
+        <div class="resource-row">
+          <span class="name"><span class="dot ev"></span>Esencia Vital (EV)</span>
+          <span class="value" style="color:var(--violet)">1,247</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>SENDAS ACTIVAS</h3>
+        <div class="missions-mini">
+          <div class="mission-slot">
+            <div class="icon">🔥</div>
+            <div class="info">
+              <div class="title">Forjar 5 núcleos ígneos</div>
+              <div class="progress">3 / 5</div>
+              <div class="bar"><span style="width:60%"></span></div>
+            </div>
+          </div>
+          <div class="mission-slot">
+            <div class="icon">⛰</div>
+            <div class="info">
+              <div class="title">Alcanzar 1K EV/s telúrica</div>
+              <div class="progress">847 / 1,000</div>
+              <div class="bar"><span style="width:85%"></span></div>
+            </div>
+          </div>
+          <div class="mission-slot">
+            <div class="icon">💎</div>
+            <div class="info">
+              <div class="title">Desbloquear 3 nodos sinápticos</div>
+              <div class="progress">1 / 3</div>
+              <div class="bar"><span style="width:33%"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="legend">
+    <b>Intención de diseño</b><br>
+    El planeta siempre visible = vínculo emocional permanente. Los <b>iconos orbitales</b> reemplazan la clásica barra de navegación: cada sección "orbita" al planeta, reforzando la metáfora cósmica. El anillo pulsante alrededor del planeta invita al <code>tap</code> sin necesidad de botón. HUD lateral con info crítica sin saturar.
+  </div>
+</section>
+
+<!-- ==================== LITOSFERA ==================== -->
+<section class="screen" id="litosfera">
+  <h1 class="screen-title">LITOSFERA</h1>
+  <p class="screen-sub">La corteza respira. Tres eslabones determinan el pulso geológico de tu mundo.</p>
+
+  <div class="chain-grid">
+    <aside class="pillar-list">
+      <div class="pillar-item tierra active">
+        <div class="head"><div class="ico">🌋</div><div class="name">LITOSFERA</div></div>
+        <div class="sub">847.2 EV/s · Era I+</div>
+      </div>
+      <div class="pillar-item oceano locked">
+        <div class="head"><div class="ico">🌊</div><div class="name">HIDROSFERA</div></div>
+        <div class="sub">Requiere Era II</div>
+      </div>
+      <div class="pillar-item atmos locked">
+        <div class="head"><div class="ico">☁</div><div class="name">ATMÓSFERA</div></div>
+        <div class="sub">Requiere Era III</div>
+      </div>
+      <div class="pillar-item vida locked">
+        <div class="head"><div class="ico">🌱</div><div class="name">BIOSFERA</div></div>
+        <div class="sub">Requiere Era IV</div>
+      </div>
+    </aside>
+
+    <div class="chain-flow">
+      <div class="chain-title">⟁ CADENA DE LA LITOSFERA</div>
+      <div class="chain-subtitle">Generación → Procesamiento → Distribución</div>
+
+      <div class="eslabones">
+        <div class="eslabon">
+          <div class="n">I</div>
+          <div class="info">
+            <div class="t">EXTRACCIÓN</div>
+            <div class="d">Magma extraído del núcleo · Capa primordial</div>
+            <div class="bar"><span style="width:72%;background:linear-gradient(90deg,var(--magma),var(--gold))"></span></div>
+          </div>
+          <div class="stat">
+            <div class="val">1,200/s</div>
+            <div class="cap">Lv 14 · cap 1,667</div>
+          </div>
+        </div>
+        <div class="flow-arrow">▾</div>
+
+        <div class="eslabon bottleneck">
+          <div class="bottleneck-badge">CUELLO DE BOTELLA</div>
+          <div class="n">II</div>
+          <div class="info">
+            <div class="t">TECTÓNICA</div>
+            <div class="d">Placas que convierten magma en roca estable</div>
+            <div class="bar"><span style="width:98%;background:var(--danger)"></span></div>
+          </div>
+          <div class="stat">
+            <div class="val" style="color:var(--danger)">847/s</div>
+            <div class="cap">Lv 9 · cap 860</div>
+          </div>
+        </div>
+        <div class="flow-arrow">▾</div>
+
+        <div class="eslabon">
+          <div class="n">III</div>
+          <div class="info">
+            <div class="t">EROSIÓN</div>
+            <div class="d">Distribución de sedimentos al resto del mundo</div>
+            <div class="bar"><span style="width:55%;background:linear-gradient(90deg,var(--magma),var(--gold))"></span></div>
+          </div>
+          <div class="stat">
+            <div class="val">1,450/s</div>
+            <div class="cap">Lv 11 · cap 2,650</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="chain-side">
+      <div class="side-card">
+        <h4>PRODUCCIÓN EFECTIVA</h4>
+        <div style="font-family:'JetBrains Mono';font-size:28px;color:var(--magma-g);font-weight:600">847 <span style="font-size:14px;color:var(--text-dim)">EV/s</span></div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px">Limitada por <span style="color:var(--danger)">Tectónica</span> — mejóralo para liberar el flujo.</div>
+      </div>
+
+      <div class="side-card">
+        <h4>MEJORAR TECTÓNICA</h4>
+        <button class="upgrade-btn">
+          POTENCIAR LV 10
+          <span class="cost">1,850 EV · +92/s</span>
+        </button>
+      </div>
+
+      <div class="side-card">
+        <h4>SUB-MEJORAS</h4>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.6">
+          <div style="display:flex;justify-content:space-between;padding:4px 0">▸ Convección profunda <span style="color:var(--gold)">x2</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0">▸ Subducción activa <span style="color:var(--text-dim)">0/1</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0">▸ Falla tectónica <span style="color:var(--text-dim)">0/1</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="legend">
+    <b>Intención de diseño</b><br>
+    La <b>cadena vertical</b> visualiza el flujo (magma baja → roca → distribución). El <b>eslabón en rojo</b> pulsando es feedback inmediato: el jugador ve dónde invertir sin leer tutoriales. Cada pilar hereda la paleta de color de su era (magma, agua, aire, vida). Ventaja ergonómica: <code>1 botón = 1 decisión clara</code>.
+  </div>
+</section>
+
+<!-- ==================== ÁRBOL SINÁPTICO ==================== -->
+<section class="screen" id="tree">
+  <h1 class="screen-title">ÁRBOL SINÁPTICO</h1>
+  <p class="screen-sub">La consciencia del planeta se ramifica. Cada sinapsis es un poder.</p>
+
+  <div class="panel tree-wrap">
+    <svg class="tree-svg" viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="gRoot" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FFE9C7"/>
+          <stop offset="50%" stop-color="#B57BFF"/>
+          <stop offset="100%" stop-color="#3D1608"/>
+        </radialGradient>
+        <radialGradient id="gOwned" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#D4AF37"/>
+          <stop offset="100%" stop-color="#8B6508"/>
+        </radialGradient>
+        <radialGradient id="gLocked">
+          <stop offset="0%" stop-color="#2B3556"/>
+          <stop offset="100%" stop-color="#0D1428"/>
+        </radialGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="4"/></filter>
+      </defs>
+
+      <!-- Conexiones -->
+      <g stroke-width="2" fill="none" opacity=".6">
+        <path d="M600 340 L380 220" stroke="#D4AF37"/>
+        <path d="M600 340 L820 220" stroke="#D4AF37"/>
+        <path d="M600 340 L380 460" stroke="#B57BFF"/>
+        <path d="M600 340 L820 460" stroke="#4FC3F7"/>
+        <path d="M380 220 L200 120" stroke="#2B3556"/>
+        <path d="M380 220 L220 240" stroke="#2B3556"/>
+        <path d="M820 220 L1000 120" stroke="#2B3556"/>
+        <path d="M820 220 L980 240" stroke="#2B3556"/>
+        <path d="M380 460 L220 560" stroke="#2B3556"/>
+        <path d="M820 460 L980 560" stroke="#2B3556"/>
+        <path d="M820 460 L1000 400" stroke="#2B3556"/>
+        <path d="M600 340 L600 540" stroke="#2B3556" stroke-dasharray="4,4"/>
+        <path d="M600 540 L450 620" stroke="#2B3556" stroke-dasharray="4,4"/>
+        <path d="M600 540 L750 620" stroke="#2B3556" stroke-dasharray="4,4"/>
+      </g>
+
+      <!-- Raíz -->
+      <circle cx="600" cy="340" r="40" fill="url(#gRoot)" filter="url(#glow)"/>
+      <circle cx="600" cy="340" r="30" fill="url(#gRoot)"/>
+      <text x="600" y="345" text-anchor="middle" fill="#fff" font-family="Cinzel" font-size="14" font-weight="700">CORE</text>
+
+      <!-- Nodos desbloqueados -->
+      <circle cx="380" cy="220" r="26" fill="url(#gOwned)" stroke="#FFE9C7" stroke-width="2"/>
+      <text x="380" y="225" text-anchor="middle" fill="#000" font-size="18">🔥</text>
+      <text x="380" y="190" text-anchor="middle" fill="#D4AF37" font-family="Cinzel" font-size="11">IGNICIÓN</text>
+
+      <circle cx="820" cy="220" r="26" fill="url(#gOwned)" stroke="#FFE9C7" stroke-width="2"/>
+      <text x="820" y="225" text-anchor="middle" fill="#000" font-size="18">⛰</text>
+      <text x="820" y="190" text-anchor="middle" fill="#D4AF37" font-family="Cinzel" font-size="11">CIMIENTOS</text>
+
+      <!-- Nodo activo (highlight) -->
+      <circle cx="380" cy="460" r="30" fill="#1A2340" stroke="#B57BFF" stroke-width="3"/>
+      <circle cx="380" cy="460" r="38" fill="none" stroke="#B57BFF" stroke-width="1" opacity=".5">
+        <animate attributeName="r" values="38;48;38" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values=".5;0;.5" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="380" y="465" text-anchor="middle" fill="#fff" font-size="18">🧠</text>
+      <text x="380" y="510" text-anchor="middle" fill="#B57BFF" font-family="Cinzel" font-size="11">COGNICIÓN</text>
+
+      <!-- Nodo disponible -->
+      <circle cx="820" cy="460" r="26" fill="#1A2340" stroke="#4FC3F7" stroke-width="2"/>
+      <text x="820" y="465" text-anchor="middle" fill="#fff" font-size="18">💧</text>
+      <text x="820" y="505" text-anchor="middle" fill="#4FC3F7" font-family="Cinzel" font-size="11">GOTA PRIMAL</text>
+
+      <!-- Nodos bloqueados -->
+      <circle cx="200" cy="120" r="22" fill="url(#gLocked)" stroke="#2B3556"/>
+      <text x="200" y="126" text-anchor="middle" fill="#7D87A8" font-size="16">🔒</text>
+      <circle cx="220" cy="240" r="22" fill="url(#gLocked)" stroke="#2B3556"/>
+      <text x="220" y="246" text-anchor="middle" fill="#7D87A8" font-size="16">🔒</text>
+      <circle cx="1000" cy="120" r="22" fill="url(#gLocked)" stroke="#2B3556"/>
+      <text x="1000" y="126" text-anchor="middle" fill="#7D87A8" font-size="16">🔒</text>
+      <circle cx="980" cy="240" r="22" fill="url(#gLocked)" stroke="#2B3556"/>
+      <text x="980" y="246" text-anchor="middle" fill="#7D87A8" font-size="16">🔒</text>
+      <circle cx="220" cy="560" r="22" fill="url(#gLocked)" stroke="#2B3556"/>
+      <text x="220" y="566" text-anchor="middle" fill="#7D87A8" font-size="16">🔒</text>
+      <circle cx="980" cy="560" r="22" fill="url(#gLocked)" stroke="#2B3556"/>
+      <text x="980" y="566" text-anchor="middle" fill="#7D87A8" font-size="16">🔒</text>
+      <circle cx="1000" cy="400" r="22" fill="url(#gLocked)" stroke="#2B3556"/>
+      <text x="1000" y="406" text-anchor="middle" fill="#7D87A8" font-size="16">🔒</text>
+      <circle cx="600" cy="540" r="22" fill="url(#gLocked)" stroke="#2B3556" stroke-dasharray="3,3"/>
+      <text x="600" y="546" text-anchor="middle" fill="#7D87A8" font-size="16">?</text>
+      <circle cx="450" cy="620" r="22" fill="url(#gLocked)" stroke="#2B3556" stroke-dasharray="3,3"/>
+      <text x="450" y="626" text-anchor="middle" fill="#7D87A8" font-size="16">?</text>
+      <circle cx="750" cy="620" r="22" fill="url(#gLocked)" stroke="#2B3556" stroke-dasharray="3,3"/>
+      <text x="750" y="626" text-anchor="middle" fill="#7D87A8" font-size="16">?</text>
+    </svg>
+
+    <div class="node-info">
+      <div class="tier">TIER II · SELECCIONADO</div>
+      <h3>COGNICIÓN PRIMAL</h3>
+      <p>Tu planeta desarrolla un eco de consciencia. Cada tap se replica en forma de resonancia telúrica.</p>
+      <div class="effect">⚡ +15% producción durante combo de taps</div>
+      <button class="upgrade-btn">ACTIVAR SINAPSIS<span class="cost">380 EV</span></button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Intención de diseño</b><br>
+    Estética "red neuronal cósmica": la <b>raíz multicolor</b> contiene las 4 eras. Nodos <b>dorados</b> = desbloqueados. Nodos <b>pulsando</b> = disponibles ahora. Nodos <code>?</code> = crean misterio y curiosidad (retention driver). El panel lateral aparece solo al seleccionar un nodo, evitando saturación inicial.
+  </div>
+</section>
+
+<!-- ==================== SENDAS ==================== -->
+<section class="screen" id="sendas">
+  <h1 class="screen-title">SENDAS</h1>
+  <p class="screen-sub">El universo te susurra propósitos. Sigue el camino, recoge su eco.</p>
+
+  <div class="missions-grid">
+    <div class="mission-big">
+      <div class="rarity">◇ ◇ ◇ · LEGADO</div>
+      <h3>FORJAR 5 NÚCLEOS ÍGNEOS</h3>
+      <p>Despertar 5 núcleos magmáticos en la Litosfera consolidará tu primera identidad planetaria.</p>
+      <div class="reward-row">
+        <span class="reward-chip gold">+ 500 EV</span>
+        <span class="reward-chip violet">+ 1 Fragmento Fósil</span>
+        <span class="reward-chip">+ 10% Telúrica 5min</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-family:'JetBrains Mono'">PROGRESO: 3 / 5</div>
+      <div class="bar"><span style="width:60%"></span></div>
+    </div>
+
+    <div class="mission-big">
+      <div class="rarity">◇ ◇ · ARCANA</div>
+      <h3>ALCANZAR 1K EV/s TELÚRICA</h3>
+      <p>La Litosfera debe sostener una producción estable antes de invocar al océano.</p>
+      <div class="reward-row">
+        <span class="reward-chip gold">+ 250 EV</span>
+        <span class="reward-chip violet">+ 1 Sinapsis libre</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-family:'JetBrains Mono'">PROGRESO: 847 / 1,000</div>
+      <div class="bar"><span style="width:85%"></span></div>
+    </div>
+
+    <div class="mission-big">
+      <div class="rarity">◇ · COMÚN</div>
+      <h3>DESBLOQUEAR 3 NODOS SINÁPTICOS</h3>
+      <p>Expande la consciencia primal del planeta explorando el árbol.</p>
+      <div class="reward-row">
+        <span class="reward-chip gold">+ 120 EV</span>
+        <span class="reward-chip">x2 EV por tap 10min</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-family:'JetBrains Mono'">PROGRESO: 1 / 3</div>
+      <div class="bar"><span style="width:33%"></span></div>
+    </div>
+
+    <div class="mission-big" style="opacity:.5">
+      <div class="rarity">◇ ◇ ◇ ◇ · MÍTICA</div>
+      <h3>???</h3>
+      <p style="color:var(--text-dim)">Una senda desconocida aguarda. Alcanza Era II para revelarla.</p>
+      <div class="reward-row">
+        <span class="reward-chip">🔒 Oculto</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Intención de diseño</b><br>
+    Las <b>rarezas con símbolos</b> (◇ ◇ ◇) sustituyen palabras comunes (Épico/Raro) — más inmersivo. La <b>misión oculta</b> en Era II es un "gancho de curiosidad" clásico (psicología de <i>incomplete narratives</i>). Solo 3 slots activos simultáneos para forzar decisiones.
+  </div>
+</section>
+
+<!-- ==================== ARCHIVO FÓSIL ==================== -->
+<section class="screen" id="codex">
+  <h1 class="screen-title">ARCHIVO FÓSIL</h1>
+  <p class="screen-sub">Lo que permanece tras el Big Bang. La memoria se vuelve poder.</p>
+
+  <div class="codex-grid">
+    <div class="codex-branch">
+      <h3>⟁ PRIMIGENIO</h3>
+      <div class="sub">"El poder se conserva entre ciclos"</div>
+      <div class="fossil-node owned">
+        <div class="icon">🔥</div>
+        <div class="t"><div class="title">BRASA ETERNA</div><div class="desc">+5% prod base</div></div>
+        <div class="cost">✓</div>
+      </div>
+      <div class="fossil-node owned">
+        <div class="icon">⚒</div>
+        <div class="t"><div class="title">HERENCIA</div><div class="desc">+10% oro prestige</div></div>
+        <div class="cost">✓</div>
+      </div>
+      <div class="fossil-node">
+        <div class="icon">⬡</div>
+        <div class="t"><div class="title">NÚCLEO DENSO</div><div class="desc">Capacidad +15%</div></div>
+        <div class="cost">3 FF</div>
+      </div>
+      <div class="fossil-node locked">
+        <div class="icon">❖</div>
+        <div class="t"><div class="title">ERUPCIÓN</div><div class="desc">Tap x3 en combo</div></div>
+        <div class="cost">🔒 5 FF</div>
+      </div>
+      <div class="fossil-node locked">
+        <div class="icon">⟡</div>
+        <div class="t"><div class="title">MAGMA VIVO</div><div class="desc">Prod pasiva +25%</div></div>
+        <div class="cost">🔒 8 FF</div>
+      </div>
+    </div>
+
+    <div class="codex-branch">
+      <h3>⟁ SEDIMENTARIO</h3>
+      <div class="sub">"Cada ciclo deposita sabiduría"</div>
+      <div class="fossil-node owned">
+        <div class="icon">⌬</div>
+        <div class="t"><div class="title">RAÍZ PROFUNDA</div><div class="desc">+1 slot senda</div></div>
+        <div class="cost">✓</div>
+      </div>
+      <div class="fossil-node">
+        <div class="icon">⚹</div>
+        <div class="t"><div class="title">ECO ANCESTRAL</div><div class="desc">Combo +2s duración</div></div>
+        <div class="cost">4 FF</div>
+      </div>
+      <div class="fossil-node">
+        <div class="icon">✦</div>
+        <div class="t"><div class="title">ESTRATOS</div><div class="desc">EV/s offline +20%</div></div>
+        <div class="cost">4 FF</div>
+      </div>
+      <div class="fossil-node locked">
+        <div class="icon">◈</div>
+        <div class="t"><div class="title">MEMORIA GEO</div><div class="desc">Auto-compra SMART</div></div>
+        <div class="cost">🔒 7 FF</div>
+      </div>
+      <div class="fossil-node locked">
+        <div class="icon">☍</div>
+        <div class="t"><div class="title">CRONOS</div><div class="desc">Acelerar tiempo 2x</div></div>
+        <div class="cost">🔒 10 FF</div>
+      </div>
+    </div>
+
+    <div class="codex-branch">
+      <h3>⟁ METAMÓRFICO</h3>
+      <div class="sub">"La presión forja lo extraordinario"</div>
+      <div class="fossil-node">
+        <div class="icon">♆</div>
+        <div class="t"><div class="title">PRESIÓN PRIMAL</div><div class="desc">Cadena +3 niveles base</div></div>
+        <div class="cost">5 FF</div>
+      </div>
+      <div class="fossil-node">
+        <div class="icon">⟐</div>
+        <div class="t"><div class="title">FUSIÓN</div><div class="desc">Sinergias entre pilares</div></div>
+        <div class="cost">6 FF</div>
+      </div>
+      <div class="fossil-node locked">
+        <div class="icon">☉</div>
+        <div class="t"><div class="title">CATACLISMO</div><div class="desc">Eventos x2 recompensa</div></div>
+        <div class="cost">🔒 8 FF</div>
+      </div>
+      <div class="fossil-node locked">
+        <div class="icon">⚶</div>
+        <div class="t"><div class="title">DIAMANTE</div><div class="desc">Prestige gain +50%</div></div>
+        <div class="cost">🔒 12 FF</div>
+      </div>
+      <div class="fossil-node locked">
+        <div class="icon">❈</div>
+        <div class="t"><div class="title">ESTRELLA NEGRA</div><div class="desc">??? (legendario)</div></div>
+        <div class="cost">🔒 20 FF</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Intención de diseño</b><br>
+    3 ramas geológicas = narrativa coherente (rocas ígneas / sedimentarias / metamórficas — ciencia real). Los <b>símbolos esotéricos</b> (⟁⚹❈) evocan grimorio científico. Nodos <b>bloqueados con número</b> crean "objetivos a medio plazo" sin spoilear. Cada rama tiene <b>un último nodo misterioso</b> que el jugador quiere descubrir.
+  </div>
+</section>
+
+<!-- ==================== AUTÓMATA ==================== -->
+<section class="screen" id="auto">
+  <h1 class="screen-title">AUTÓMATA</h1>
+  <p class="screen-sub">Delega tu voluntad. El planeta se mantiene por sí mismo.</p>
+
+  <div class="auto-grid">
+    <div class="auto-card">
+      <div class="head">
+        <div class="ico">⚙</div>
+        <div>
+          <h3>COMPRA CONTINUA</h3>
+          <div class="status">◉ ACTIVO · Modo AUTO</div>
+        </div>
+      </div>
+      <p>Adquiere automáticamente la mejora más eficiente disponible cada 2 segundos, respetando tu reserva mínima.</p>
+      <div class="toggle-row">
+        <button class="toggle-btn">OFF</button>
+        <button class="toggle-btn active">AUTO</button>
+        <button class="toggle-btn smart">SMART</button>
+      </div>
+    </div>
+
+    <div class="auto-card">
+      <div class="head">
+        <div class="ico" style="background:linear-gradient(135deg,var(--magma),#8B3410)">🔥</div>
+        <div>
+          <h3>COMBO AUTOMÁTICO</h3>
+          <div class="status">○ INACTIVO</div>
+        </div>
+      </div>
+      <p>Cuando detecte 5 taps seguidos, activará el combo y mantendrá el ritmo por ti durante la ventana de 10s.</p>
+      <div class="toggle-row">
+        <button class="toggle-btn active">OFF</button>
+        <button class="toggle-btn">AUTO</button>
+        <button class="toggle-btn smart">SMART</button>
+      </div>
+    </div>
+
+    <div class="auto-card">
+      <div class="head">
+        <div class="ico" style="background:linear-gradient(135deg,var(--violet),#6A4DA8)">🧠</div>
+        <div>
+          <h3>DECISIÓN SINÁPTICA</h3>
+          <div class="status">◉ ACTIVO · Modo SMART</div>
+        </div>
+      </div>
+      <p>Analiza tu árbol y compra automáticamente el siguiente nodo sináptico óptimo según tu ruta aprendida.</p>
+      <div class="toggle-row">
+        <button class="toggle-btn">OFF</button>
+        <button class="toggle-btn">AUTO</button>
+        <button class="toggle-btn smart active">SMART</button>
+      </div>
+    </div>
+
+    <div class="auto-card">
+      <div class="head">
+        <div class="ico" style="background:linear-gradient(135deg,var(--gold),#8B6508)">📜</div>
+        <div>
+          <h3>SELECCIÓN DE SENDAS</h3>
+          <div class="status">○ INACTIVO</div>
+        </div>
+      </div>
+      <p>Al completar una senda, elige la siguiente más alineada con tu estrategia actual.</p>
+      <div class="toggle-row">
+        <button class="toggle-btn active">OFF</button>
+        <button class="toggle-btn">AUTO</button>
+        <button class="toggle-btn smart">SMART</button>
+      </div>
+    </div>
+
+    <div class="auto-card" style="grid-column:1 / 3">
+      <div class="head">
+        <div class="ico" style="background:linear-gradient(135deg,#FFE9C7,var(--gold));color:#000">✦</div>
+        <div>
+          <h3>UMBRAL AUTOMÁTICO</h3>
+          <div class="status" style="color:var(--danger)">⚠ ALTA RESPONSABILIDAD</div>
+        </div>
+      </div>
+      <p>Cuando alcances el EV óptimo para Big Bang, ejecutará el prestige tras 60 segundos de confirmación visible. <b>Desbloquéalo tras 5 prestiges manuales.</b></p>
+      <div class="toggle-row" style="max-width:400px">
+        <button class="toggle-btn active">OFF</button>
+        <button class="toggle-btn" disabled style="opacity:.3">AUTO 🔒</button>
+        <button class="toggle-btn smart" disabled style="opacity:.3">SMART 🔒</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Intención de diseño</b><br>
+    Estética "consola de control orgánica": cada módulo tiene <b>icono con glow propio</b> que representa su función. Tres modos (<code>OFF / AUTO / SMART</code>) progresivamente más avanzados: OFF para el que quiere control total, AUTO para comodidad, SMART para expertos. El Umbral Automático <b>bloqueado hasta 5 prestiges manuales</b> — evita que el jugador automatice antes de entender qué está automatizando.
+  </div>
+</section>
+
+<!-- ==================== UMBRAL CÓSMICO ==================== -->
+<section class="screen" id="umbral">
+  <h1 class="screen-title">UMBRAL CÓSMICO</h1>
+  <p class="screen-sub">Todo lo que construiste, colapsa en un punto. Y ese punto se expande, distinto.</p>
+
+  <div class="prestige-stage">
+    <div class="bigbang-core"></div>
+    <div>
+      <div class="prestige-title">BIG BANG</div>
+      <div class="prestige-sub" style="margin-top:14px">"Nada se pierde. Todo se transmuta. Tu conocimiento se condensa en fragmentos fósiles que sobrevivirán al nuevo ciclo."</div>
+    </div>
+
+    <div class="prestige-preview">
+      <div class="preview-card">
+        <div class="label">FRAGMENTOS FÓSILES</div>
+        <div class="val">+ 47</div>
+        <div class="gain">(tienes 12 · total: 59)</div>
+      </div>
+      <div class="preview-card">
+        <div class="label">MULTIPLICADOR GLOBAL</div>
+        <div class="val">× 2.38</div>
+        <div class="gain">+0.28 vs actual</div>
+      </div>
+      <div class="preview-card">
+        <div class="label">SINAPSIS PERMANENTES</div>
+        <div class="val">3</div>
+        <div class="gain">(se conservan tras el colapso)</div>
+      </div>
+    </div>
+
+    <button class="big-btn">COLAPSAR EL MUNDO</button>
+    <div style="font-size:11px;color:var(--text-dim);font-style:italic">Requiere confirmación · Acción irreversible dentro del ciclo</div>
+  </div>
+
+  <div class="legend">
+    <b>Intención de diseño</b><br>
+    Pantalla <b>cinematográfica</b>: big bang animado + título monumental + frase poética. Preview <b>en 3 métricas clave</b> (no saturar). Botón "COLAPSAR EL MUNDO" dramatiza la acción — el jugador siente el peso. Los fragmentos fósiles son la conexión directa con el Archivo Fósil = bucle de recompensa entendible.
+  </div>
+</section>
+
+<!-- ==================== PULSO (eventos) ==================== -->
+<section class="screen" id="pulso">
+  <h1 class="screen-title">PULSO</h1>
+  <p class="screen-sub">El cosmos ha llamado. Tu decisión moldeará el curso del mundo.</p>
+
+  <div class="event-overlay">
+    <div class="event-modal">
+      <div class="event-kind">◈ EVENTO TELÚRICO · ERA I</div>
+      <div class="event-title">LA PRIMERA FRACTURA</div>
+      <div class="event-story">
+        "Una falla titánica amenaza con partir la corteza. El magma asciende en columnas. La decisión que tomes ahora marcará la identidad tectónica de tu planeta para siempre."
+      </div>
+
+      <div class="event-options">
+        <div class="event-option">
+          <div class="choice"><span class="num">1</span> CANALIZAR EL MAGMA EN VOLCANES</div>
+          <div class="consequences">
+            <span class="good">+ 20% Litosfera 30 min</span> · <span class="good">+ 1 Fragmento Fósil</span>
+          </div>
+        </div>
+        <div class="event-option">
+          <div class="choice"><span class="num">2</span> SELLAR LA FALLA CON PRESIÓN</div>
+          <div class="consequences">
+            <span class="good">+ 15% capacidad cadena permanente</span> · <span class="bad">− 50% prod 10 min</span>
+          </div>
+        </div>
+        <div class="event-option">
+          <div class="choice"><span class="num">3</span> DEJAR QUE FLUYA LIBREMENTE</div>
+          <div class="consequences">
+            <span class="bad">− pérdida aleatoria de 200 EV</span> · <span class="good">+ posible desbloqueo de nodo oculto</span>
+          </div>
+        </div>
+        <div class="event-option" style="opacity:.5;border-style:dashed">
+          <div class="choice"><span class="num">4</span> ??? <span style="color:var(--text-dim);font-size:10px;margin-left:auto">REQUIERE SINAPSIS "COGNICIÓN"</span></div>
+          <div class="consequences"><span style="color:var(--text-dim)">Una cuarta opción solo visible si conoces el lenguaje del planeta...</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Intención de diseño</b><br>
+    Modal <b>reverencial</b> con brillo pulsante: interrumpe el juego pero se siente importante, no molesto. Cada opción tiene <b>pros y contras</b> explícitos — decisiones con peso real. La <b>4ª opción oculta</b> desbloqueable desde el árbol sináptico premia al jugador curioso. Los eventos son moneda narrativa: refuerzan la identidad de "ser el planeta".
+  </div>
+</section>
+
+</main>
+
+<script>
+  // Navegación entre pantallas
+  document.querySelectorAll('nav.topbar button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const s = btn.dataset.s;
+      document.querySelectorAll('nav.topbar button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+      document.getElementById(s).classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+
+  // Estrellas del fondo
+  const stars = document.getElementById('stars');
+  for (let i=0;i<120;i++){
+    const s = document.createElement('span');
+    s.style.top = Math.random()*100+'%';
+    s.style.left = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*4)+'s';
+    s.style.opacity = Math.random()*.7+.2;
+    stars.appendChild(s);
+  }
+</script>
+</body>
+</html>

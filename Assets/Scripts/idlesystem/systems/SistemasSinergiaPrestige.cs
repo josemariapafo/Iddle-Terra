@@ -268,9 +268,15 @@ namespace Terra.Systems
                 est.Desbloqueada = false;
             }
 
+            // Bifurcaciones (T26): se eligen cada run, se resetean en cualquier prestige.
+            // -1 = no elegida (se re-solicitará al llegar a la era correspondiente).
+            var pilares = (TipoPilar[])Enum.GetValues(typeof(TipoPilar));
+            foreach (var pilar in pilares)
+                _estado.Bifurcaciones[pilar] = -1;
+
             if (tipo == TipoReset.Total)
             {
-                // BigBang: también resetear árbol, recursos y Códice Fósil
+                // BigBang: también resetear árbol, recursos, Códice Fósil y Códice Genético
                 foreach (var est in _estado.Nodos.Values)
                 {
                     est.Nivel = 0;
@@ -282,6 +288,11 @@ namespace Terra.Systems
                     est.Desbloqueado = false;
                 }
                 foreach (var est in _estado.NodosCodice.Values)
+                {
+                    est.Nivel = 0;
+                }
+                // Códice Genético (T25): sobrevive a Extinción/Glaciación, SOLO se borra en BigBang
+                foreach (var est in _estado.NodosCodiceGenetico.Values)
                 {
                     est.Nivel = 0;
                 }

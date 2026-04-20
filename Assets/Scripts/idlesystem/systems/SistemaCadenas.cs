@@ -15,7 +15,9 @@ namespace Terra.Systems
         private readonly DefinicionSubMejoraCadena[] _definiciones;
         private EstadoJuego _estado;
         private SistemaCodice _codice;
+        private SistemaCodiceGenetico _codiceGen;
         private SistemaMejoras _mejoras;
+        private SistemaBifurcaciones _bifurcaciones;
 
         // Era mínima por pilar (derivada de las definiciones)
         private readonly int[] _eraDesbloqueo = new int[4]; // indexado por TipoPilar
@@ -36,7 +38,9 @@ namespace Terra.Systems
         }
 
         public void AsignarCodice(SistemaCodice codice) => _codice = codice;
+        public void AsignarCodiceGenetico(SistemaCodiceGenetico cg) => _codiceGen = cg;
         public void AsignarMejoras(SistemaMejoras mejoras) => _mejoras = mejoras;
+        public void AsignarBifurcaciones(SistemaBifurcaciones bif) => _bifurcaciones = bif;
 
         public void Inicializar() { }
 
@@ -64,7 +68,7 @@ namespace Terra.Systems
             if (!est.Desbloqueada || est.Nivel >= def.NivelMax) return false;
             if (_estado.CadenasBloqueadasDesafio) return false;
 
-            double coste = def.CosteEnNivel(est.Nivel) * (1.0 - (_codice?.ReduccionCosteCadenas() ?? 0.0));
+            double coste = def.CosteEnNivel(est.Nivel) * (1.0 - ReduccionCosteCadenasEfectiva());
             if (_estado.EnergiaVital < coste) return false;
 
             _estado.EnergiaVital -= coste;
@@ -87,7 +91,7 @@ namespace Terra.Systems
             int comprados = 0;
             while (est.Nivel < def.NivelMax)
             {
-                double coste = def.CosteEnNivel(est.Nivel) * (1.0 - (_codice?.ReduccionCosteCadenas() ?? 0.0));
+                double coste = def.CosteEnNivel(est.Nivel) * (1.0 - ReduccionCosteCadenasEfectiva());
                 if (_estado.EnergiaVital < coste) break;
 
                 _estado.EnergiaVital -= coste;
@@ -108,6 +112,8 @@ namespace Terra.Systems
 
         public void ComprobarDesbloqueos()
         {
+            int reduccionReq = _codiceGen?.ReduccionReqEslabones() ?? 0;
+
             foreach (var def in _definiciones)
             {
                 var est = _estado.Cadenas[def.Id];
@@ -116,15 +122,27 @@ namespace Terra.Systems
                 // Era requerida
                 if (def.EraRequerida > _estado.EraActual) continue;
 
-                // Nivel acumulado del eslabón requerido
+                // Nivel acumulado del eslabón requerido (con reducción genética)
                 if (def.NivelEslabonRequerido > 0)
                 {
+                    int reqEfectivo = System.Math.Max(1, def.NivelEslabonRequerido - reduccionReq);
                     int nivelEslabon = NivelAcumuladoEslabon(def.Pilar, def.Eslabon);
-                    if (nivelEslabon < def.NivelEslabonRequerido) continue;
+                    if (nivelEslabon < reqEfectivo) continue;
                 }
 
                 est.Desbloqueada = true;
             }
+        }
+
+        /// <summary>
+        /// Reducción coste cadenas acumulada (fósil + genético), cap 80%.
+        /// </summary>
+        private double ReduccionCosteCadenasEfectiva()
+        {
+            double r = (_codice?.ReduccionCosteCadenas() ?? 0.0)
+                     + (_codiceGen?.ReduccionCosteCadenas() ?? 0.0);
+            if (r > 0.8) r = 0.8;
+            return r;
         }
 
         // ── Cálculos de cap ───────────────────────────────────────────────
@@ -158,25 +176,57 @@ namespace Terra.Systems
         /// <summary>
         /// Cap efectivo del pilar = min(generación, procesamiento, distribución).
         /// Retorna double.MaxValue si la cadena no está desbloqueada aún.
+        /// Aplica: cap fósil, cap genético, bonus Tierra y multiplicadores de bifurcación.
         /// </summary>
         public double CalcularCapPilar(TipoPilar pilar)
         {
             if (!CadenaPilarDesbloqueada(pilar)) return double.MaxValue;
 
-            double bonusCap = 1.0 + (_codice?.BonusCapCadena() ?? 0.0);
+            // Bonus cap cadena: fósil (aditivo) × genético (multiplicativo)
+            double bonusFosil   = 1.0 + (_codice?.BonusCapCadena() ?? 0.0);
+            double bonusGenetico = 1.0 + (_codiceGen?.BonusCapCadenaGen() ?? 0.0);
+            double bonusCap = bonusFosil * bonusGenetico;
 
             // Bonus secundario Tierra (T21): +0.5% al cap por nivel total Tierra
             if (_mejoras != null)
             {
                 int nivTierra = _mejoras.NivelTotalPilar(TipoPilar.Tierra);
-                bonusCap += 0.005 * nivTierra;
+                bonusCap *= 1.0 + 0.005 * nivTierra;
             }
 
-            double gen  = CalcularCapEslabon(pilar, TipoEslabon.Generacion) * bonusCap;
-            double proc = CalcularCapEslabon(pilar, TipoEslabon.Procesamiento) * bonusCap;
-            double dist = CalcularCapEslabon(pilar, TipoEslabon.Distribucion) * bonusCap;
+            // Multiplicador de bifurcación por eslabón (T26).
+            // La bifurcación de un pilar asigna multiplicadores distintos
+            // por eslabón (gen/proc/dist) según la opción elegida.
+            double multGen  = MultiplicadorBifurcacion(pilar, TipoEslabon.Generacion);
+            double multProc = MultiplicadorBifurcacion(pilar, TipoEslabon.Procesamiento);
+            double multDist = MultiplicadorBifurcacion(pilar, TipoEslabon.Distribucion);
+
+            double gen  = CalcularCapEslabon(pilar, TipoEslabon.Generacion)   * bonusCap * multGen;
+            double proc = CalcularCapEslabon(pilar, TipoEslabon.Procesamiento) * bonusCap * multProc;
+            double dist = CalcularCapEslabon(pilar, TipoEslabon.Distribucion)  * bonusCap * multDist;
 
             return System.Math.Min(gen, System.Math.Min(proc, dist));
+        }
+
+        /// <summary>
+        /// Multiplicador efectivo de bifurcación para un (pilar, eslabón).
+        /// Si no hay bifurcación elegida o no hay sistema de bifurcaciones,
+        /// devuelve 1.0 (neutro). El bonus genético amplifica la magnitud
+        /// del multiplicador (extra sobre 1.0).
+        /// </summary>
+        public double MultiplicadorBifurcacion(TipoPilar pilar, TipoEslabon eslabon)
+        {
+            if (_bifurcaciones == null) return 1.0;
+            double mult = _bifurcaciones.MultiplicadorEslabon(pilar, eslabon);
+
+            // Amplificación genética: +X% a la parte que excede 1.0
+            double ampl = _codiceGen?.BonusMultiplicadoresBifurcacion() ?? 0.0;
+            if (ampl > 0 && mult != 1.0)
+            {
+                double exceso = mult - 1.0;
+                mult = 1.0 + exceso * (1.0 + ampl);
+            }
+            return mult;
         }
 
         /// <summary>

@@ -18,6 +18,7 @@ namespace Terra.Systems
         private readonly DefinicionNodo[] _todosNodos;
         private SistemaCadenas _cadenas;
         private SistemaCodice _codice;
+        private SistemaCodiceGenetico _codiceGen;
 
         public CalculadorProduccion(
             DefinicionMejora[] mejoras,
@@ -31,6 +32,7 @@ namespace Terra.Systems
 
         public void AsignarCadenas(SistemaCadenas cadenas) => _cadenas = cadenas;
         public void AsignarCodice(SistemaCodice codice) => _codice = codice;
+        public void AsignarCodiceGenetico(SistemaCodiceGenetico cg) => _codiceGen = cg;
 
         /// <summary>
         /// Calcula EV/s completo con todas las capas multiplicadoras.
@@ -56,7 +58,36 @@ namespace Terra.Systems
             // Multiplicador permanente por desafíos completados (T23)
             double desafios  = estado.BonusDesafiosCompletados > 0 ? estado.BonusDesafiosCompletados : 1.0;
 
-            return base_ * sinergias * nodos * prestige * evento * racha * nocturno * codice * bonusAtm * desafios;
+            // ── Códice Genético (T25) ─────────────────────────────────────
+            double globalGen    = 1.0 + (_codiceGen?.MultiplicadorGlobalGen() ?? 0.0);
+            double balanceados  = 1.0 + (EstaBalanceadoTresPilares(estado)
+                                    ? (_codiceGen?.BonusPilaresBalanceados() ?? 0.0)
+                                    : 0.0);
+
+            return base_ * sinergias * nodos * prestige * evento * racha
+                 * nocturno * codice * bonusAtm * desafios
+                 * globalGen * balanceados;
+        }
+
+        /// <summary>
+        /// True si al menos 3 de 4 pilares tienen nivel total dentro del 50%
+        /// del mayor (condición de "balance" para el bonus de Simbiosis).
+        /// </summary>
+        private bool EstaBalanceadoTresPilares(EstadoJuego estado)
+        {
+            int[] niveles = new int[4];
+            int mayor = 0;
+            for (int p = 0; p < 4; p++)
+            {
+                niveles[p] = NivelTotalPilar(estado, (TipoPilar)p);
+                if (niveles[p] > mayor) mayor = niveles[p];
+            }
+            if (mayor <= 0) return false;
+            double umbral = mayor * 0.5;
+            int dentro = 0;
+            for (int p = 0; p < 4; p++)
+                if (niveles[p] >= umbral) dentro++;
+            return dentro >= 3;
         }
 
         // ── Bonus secundarios por pilar (T21) ─────────────────────────────
@@ -147,7 +178,12 @@ namespace Terra.Systems
                 }
 
             // Vida amplifica la efectividad SOLO si hay sinergias activas
-            if (alguna) mult *= BonusVidaSinergias(estado);
+            if (alguna)
+            {
+                mult *= BonusVidaSinergias(estado);
+                // Códice Genético - Mutación: efectividad sinergias (multiplicativo)
+                mult *= 1.0 + (_codiceGen?.BonusEfectividadSinergias() ?? 0.0);
+            }
 
             return mult;
         }
@@ -231,7 +267,17 @@ namespace Terra.Systems
         {
             double ganancia = CalcularGananciaPrestige(tipo, estado.EnergiaVital);
             if (tipo == TipoPrestige.Extincion)
-                ganancia *= 1.0 + (_codice?.BonusFosilesPrestige() ?? 0.0);
+            {
+                // Fósiles: códice fósil base + códice genético aditivo
+                double bonus = (_codice?.BonusFosilesPrestige() ?? 0.0)
+                             + (_codiceGen?.BonusFosilesPrestige() ?? 0.0);
+                ganancia *= 1.0 + bonus;
+            }
+            else if (tipo == TipoPrestige.Glaciacion)
+            {
+                // Genes: solo el códice genético modifica
+                ganancia *= 1.0 + (_codiceGen?.BonusGenesPrestige() ?? 0.0);
+            }
             return Math.Floor(ganancia);
         }
 

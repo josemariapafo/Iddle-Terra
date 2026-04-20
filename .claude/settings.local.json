@@ -1,7 +1,31 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "WebSearch",
+      "WebFetch(domain:www.indiehackers.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:bigideasdb.com)",
+      "WebFetch(domain:www.nxcode.io)",
+      "WebFetch(domain:painonsocial.com)",
+      "WebFetch(domain:www.the-ai-corner.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:www.saasniche.com)",
+      "WebFetch(domain:calmops.com)",
+      "WebFetch(domain:openalternative.co)",
+      "WebFetch(domain:langfuse.com)",
+      "WebFetch(domain:www.vantage.sh)",
+      "WebFetch(domain:cap.so)",
+      "WebFetch(domain:helicone.ai)",
+      "WebFetch(domain:www.profound.so)",
+      "WebFetch(domain:otterly.ai)",
+      "WebFetch(domain:www.nanonets.com)",
+      "WebFetch(domain:nanonets.com)",
+      "WebFetch(domain:rossum.ai)",
+      "WebFetch(domain:storeinspect.com)",
+      "WebFetch(domain:tabski.com)",
+      "WebFetch(domain:webkiks.com)",
+      "WebFetch(domain:ideaproof.io)"
     ]
   }
 }

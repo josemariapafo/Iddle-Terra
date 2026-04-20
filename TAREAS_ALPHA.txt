@@ -608,7 +608,7 @@ TAREA 24 - Guardar + UI desafios [COMPLETADA]
  BLOQUE 12: CODICE GENETICO (Era 6)
 ================================================================================
 
-TAREA 25 - Codice Genetico
+TAREA 25 - Codice Genetico [COMPLETADA]
   Prioridad: BAJA
   Depende de: T16 (SistemaCodice base)
 
@@ -637,7 +637,7 @@ TAREA 25 - Codice Genetico
  BLOQUE 13: BIFURCACIONES EVOLUTIVAS (Era 6)
 ================================================================================
 
-TAREA 26 - Sistema de bifurcaciones
+TAREA 26 - Sistema de bifurcaciones [COMPLETADA]
   Prioridad: BAJA
   Depende de: T6 (cadenas), T7 (guardar cadenas)
 
@@ -682,7 +682,7 @@ TAREA 26 - Sistema de bifurcaciones
  BLOQUE 14: BALANCE Y TESTING
 ================================================================================
 
-TAREA 27 - Balance pass completo
+TAREA 27 - Balance pass completo [COMPLETADA - ver BALANCE_PASS.md]
   Prioridad: CRITICA (pero se hace al final)
   Depende de: Todas las anteriores
 

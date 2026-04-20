@@ -15,6 +15,7 @@ namespace Terra.Systems
         private readonly DefinicionMejora[] _definiciones;
         private EstadoJuego _estado;
         private SistemaCodice _codice;
+        private SistemaCodiceGenetico _codiceGen;
 
         private static readonly int[] _nivelesHito = { 10, 25, 50, 100, 200, 500 };
 
@@ -22,11 +23,15 @@ namespace Terra.Systems
             _definiciones = definiciones;
 
         public void AsignarCodice(SistemaCodice codice) => _codice = codice;
+        public void AsignarCodiceGenetico(SistemaCodiceGenetico cg) => _codiceGen = cg;
 
         private double CosteConReduccion(DefinicionMejora def, int nivel)
         {
             double coste = def.CosteEnNivel(nivel);
-            double reduccion = _codice?.ReduccionCosteMejoras() ?? 0.0;
+            // Reducción acumulativa aditiva (cap 80% para que no llegue a 0)
+            double reduccion = (_codice?.ReduccionCosteMejoras() ?? 0.0)
+                             + (_codiceGen?.ReduccionCosteMejoras() ?? 0.0);
+            if (reduccion > 0.8) reduccion = 0.8;
             return coste * (1.0 - reduccion);
         }
 

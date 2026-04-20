@@ -375,6 +375,89 @@ namespace Terra.Data
             Math.Floor(CosteFosiles * Math.Pow(MultiplicadorCostePorNivel, nivel));
     }
 
+    // ── Definición de nodo del Códice Genético (inmutable) ────────────────
+    // Similar a DefinicionNodoCodice pero usa Genes en lugar de Fósiles
+    // y pertenece a una de las 3 ramas del Códice Genético.
+    [Serializable]
+    public class DefinicionNodoCodiceGenetico
+    {
+        public string Id;
+        public string Nombre;
+        public string Descripcion;
+        public TipoCodiceGenetico Rama;
+        public double CosteGenes;               // coste base en genes
+        public double MultiplicadorCostePorNivel; // default 2.0
+        public TipoBonus TipoBonus;
+        public double ValorBonusPorNivel;
+        public int NivelMax;
+        public string NodoPrevioId;             // prerequisito en el árbol
+
+        public DefinicionNodoCodiceGenetico(
+            string id, string nombre, string desc,
+            TipoCodiceGenetico rama, double costeGenes,
+            TipoBonus tipoBonus, double valorBonus,
+            int nivelMax = 3,
+            string nodoPrevio = null,
+            double multCoste = 2.0)
+        {
+            Id = id; Nombre = nombre; Descripcion = desc;
+            Rama = rama; CosteGenes = costeGenes;
+            MultiplicadorCostePorNivel = multCoste;
+            TipoBonus = tipoBonus; ValorBonusPorNivel = valorBonus;
+            NivelMax = nivelMax; NodoPrevioId = nodoPrevio;
+        }
+
+        public double CosteEnNivel(int nivel) =>
+            Math.Floor(CosteGenes * Math.Pow(MultiplicadorCostePorNivel, nivel));
+    }
+
+    // ── Definición de bifurcación evolutiva (T26, Era 6) ──────────────────
+    // Cada pilar tiene 1 bifurcación con 2 opciones mutuamente excluyentes.
+    // Se elige una vez alcanzada la Era 6; se resetea con cada prestige.
+    // Los multiplicadores se aplican al cap de cada eslabón del pilar.
+    [Serializable]
+    public class DefinicionBifurcacion
+    {
+        public TipoPilar Pilar;
+        public string NombreA;
+        public string DescripcionA;
+        public double MultGenA;                 // multiplicador cap Generación opción A
+        public double MultProcA;                // multiplicador cap Procesamiento opción A
+        public double MultDistA;                // multiplicador cap Distribución opción A
+
+        public string NombreB;
+        public string DescripcionB;
+        public double MultGenB;
+        public double MultProcB;
+        public double MultDistB;
+
+        public DefinicionBifurcacion(
+            TipoPilar pilar,
+            string nombreA, string descA,
+            double mGenA, double mProcA, double mDistA,
+            string nombreB, string descB,
+            double mGenB, double mProcB, double mDistB)
+        {
+            Pilar = pilar;
+            NombreA = nombreA; DescripcionA = descA;
+            MultGenA = mGenA; MultProcA = mProcA; MultDistA = mDistA;
+            NombreB = nombreB; DescripcionB = descB;
+            MultGenB = mGenB; MultProcB = mProcB; MultDistB = mDistB;
+        }
+
+        public double MultiplicadorEslabon(int opcion, TipoEslabon eslabon)
+        {
+            if (opcion < 0) return 1.0;          // no elegida todavía
+            return eslabon switch
+            {
+                TipoEslabon.Generacion     => opcion == 0 ? MultGenA  : MultGenB,
+                TipoEslabon.Procesamiento  => opcion == 0 ? MultProcA : MultProcB,
+                TipoEslabon.Distribucion   => opcion == 0 ? MultDistA : MultDistB,
+                _ => 1.0
+            };
+        }
+    }
+
     // ── Snapshot de estado para condiciones ───────────────────────────────
     // Estructura de solo lectura que se pasa a condiciones de logros/desafíos
     public struct EstadoSnapshot

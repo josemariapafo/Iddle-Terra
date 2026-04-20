@@ -31,6 +31,8 @@ namespace Terra.Controllers
         public SistemaCadenas Cadenas { get; private set; }
         public SistemaMisiones Misiones { get; private set; }
         public SistemaCodice Codice { get; private set; }
+        public SistemaCodiceGenetico CodiceGenetico { get; private set; }
+        public SistemaBifurcaciones Bifurcaciones { get; private set; }
         public SistemaAutomatizacion Automatizacion { get; private set; }
         public SistemaDesafios Desafios { get; private set; }
 
@@ -124,6 +126,8 @@ namespace Terra.Controllers
             var defCadenas = CatalogoCadenas.Crear();
             var defMisiones = CatalogoMisiones.Crear();
             var defCodice = CatalogoCodice.Crear();
+            var defCodiceGen = CatalogoCodiceGenetico.Crear();
+            var defBifurcaciones = CatalogoBifurcaciones.Crear();
             var defDesafios = CatalogoDesafios.Crear();
 
             // 2. Crear estado
@@ -150,12 +154,31 @@ namespace Terra.Controllers
             _calculador.AsignarCodice(Codice);
             Mejoras.AsignarCodice(Codice);
             Cadenas.AsignarCodice(Codice);
+
+            // Códice Genético (T25) — Era 6+, moneda Genes
+            CodiceGenetico = new SistemaCodiceGenetico(defCodiceGen);
+            _calculador.AsignarCodiceGenetico(CodiceGenetico);
+            Mejoras.AsignarCodiceGenetico(CodiceGenetico);
+            Cadenas.AsignarCodiceGenetico(CodiceGenetico);
+            Eventos.AsignarCodiceGenetico(CodiceGenetico);
+
+            // Bifurcaciones (T26) — Era 6+, decisión por pilar
+            Bifurcaciones = new SistemaBifurcaciones(defBifurcaciones);
+            Cadenas.AsignarBifurcaciones(Bifurcaciones);
+
             Automatizacion = new SistemaAutomatizacion(Mejoras);
             Desafios = new SistemaDesafios(defDesafios);
             _offline = new SistemaOffline(_calculador);
             _guardado = new SistemaGuardado();
 
             // 5. Inyectar estado en sistemas
+            //    IMPORTANTE: Codice, CodiceGenetico y Bifurcaciones deben
+            //    inicializarse ANTES que Cadenas y Mejoras, porque estos
+            //    últimos consultan sus bonus dentro de ComprobarDesbloqueos
+            //    (que AsignarEstado invoca indirectamente).
+            Codice.AsignarEstado(Estado);
+            CodiceGenetico.AsignarEstado(Estado);
+            Bifurcaciones.AsignarEstado(Estado);
             Cadenas.AsignarEstado(Estado);
             Mejoras.AsignarEstado(Estado);
             Sinergias.AsignarEstado(Estado);
@@ -167,7 +190,6 @@ namespace Terra.Controllers
             Estancamiento.AsignarEstado(Estado);
             Racha.AsignarEstado(Estado);
             Misiones.AsignarEstado(Estado);
-            Codice.AsignarEstado(Estado);
             Automatizacion.AsignarEstado(Estado);
             Desafios.AsignarEstado(Estado);
             _offline.AsignarEstado(Estado);
@@ -255,6 +277,7 @@ namespace Terra.Controllers
             Misiones.Actualizar(delta);
             Automatizacion.Actualizar(delta);
             Desafios.Actualizar(delta);
+            Bifurcaciones.Actualizar(delta);
 
             // Publicar cambio de EV
             EventBus.Publicar(new EventoEVCambia(Estado.EnergiaVital));
@@ -279,6 +302,8 @@ namespace Terra.Controllers
         public bool ComprarSubMejoraCadena(string id) => Cadenas.ComprarNivel(id);
         public int ComprarSubMejoraCadenaMax(string id) => Cadenas.ComprarMax(id);
         public bool ComprarNodoCodice(string id) => Codice.ComprarNodo(id);
+        public bool ComprarNodoCodiceGenetico(string id) => CodiceGenetico.ComprarNodo(id);
+        public bool ElegirBifurcacion(TipoPilar pilar, int opcion) => Bifurcaciones.Elegir(pilar, opcion);
         public void AlternarAutomatizacion(TipoAutomatizacion tipo) => Automatizacion.Alternar(tipo);
         public bool IniciarDesafio(string id) => Desafios.IniciarDesafio(id);
         public void AbandonarDesafio() => Desafios.AbandonarDesafio();

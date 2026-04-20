@@ -1,0 +1,187 @@
+================================================================================
+ SESION 2026-04-18 — Cierre del Alpha
+================================================================================
+
+CONTEXTO:
+---------
+Sesion anterior (2026-04-04) cerro hasta T24. Esta sesion completa las
+tareas T25, T26 y T27 — el alpha queda funcionalmente cerrado.
+
+
+TAREAS COMPLETADAS HOY:
+-----------------------
+
+T25: CODICE GENETICO (Era 6+) [COMPLETADA]
+
+  Archivos nuevos:
+    - Assets/Scripts/idlesystem/data/Catalogos/CatalogoCodiceGenetico.cs
+        20 nodos en 3 ramas:
+          ADAPTACION (7 nodos, cg_a1-a7): cadenas y construccion acelerada
+          MUTACION (7 nodos, cg_m1-m7): sinergias y eventos profundos
+          SIMBIOSIS (6 nodos, cg_s1-s6): balance de pilares y capstones
+        Costes de 2 genes (raiz) a 45 genes (capstone), mult x2 por nivel.
+
+    - Assets/Scripts/idlesystem/systems/SistemaCodiceGenetico.cs
+        Patron paralelo a SistemaCodice para mantener separacion limpia.
+        Metodos ComprarNodo, PuedeComprar, PrerequisitoCumplido.
+        Consultas de bonus: BonusCapCadenaGen, ReduccionReqEslabones,
+        BonusFosilesPrestige, BonusGenesPrestige, ReduccionCosteCadenas,
+        BonusEfectividadSinergias, ReduccionCooldownEventos,
+        OpcionEventoExtraDesbloqueada, ReduccionCosteMejoras,
+        BonusPilaresBalanceados, MultiplicadorGlobalGen,
+        BonusMultiplicadoresBifurcacion.
+
+  Modificaciones:
+    - utils/Interfaces.cs: enum TipoCodiceGenetico, 9 nuevos TipoBonus
+    - data/Definiciones.cs: DefinicionNodoCodiceGenetico (moneda Genes)
+    - state/EstadoJuego.cs: Dict NodosCodiceGenetico
+    - systems/CalculadorProduccion.cs:
+        AsignarCodiceGenetico(), multiplicadores GlobalGen,
+        PilaresBalanceados, EfectividadSinergias, BonusGenesPrestige,
+        BonusFosilesPrestige aditivo al fosil.
+    - systems/SistemaMejoras.cs:
+        AsignarCodiceGenetico(), ReduccionCosteMejoras acumulada (cap 80%)
+    - systems/SistemaCadenas.cs:
+        AsignarCodiceGenetico(), BonusCapCadenaGen (multiplicativo al fosil),
+        ReduccionCosteCadenasEfectiva (cap 80%), ReduccionReqEslabones con
+        minimo 1, MultiplicadorBifurcacion (hook para T26).
+    - systems/SistemasSecundarios.cs (SistemaEventos):
+        AsignarCodiceGenetico(), OpcionExtraDesbloqueada(),
+        ReduccionCooldownEventos aplicada a ResetearTimer.
+    - systems/SistemasSinergiaPrestige.cs (SistemaPrestige.Resetear):
+        Reset de NodosCodiceGenetico SOLO en TipoReset.Total (BigBang).
+    - systems/SistemaGuardado.cs:
+        Serializa y deserializa NodosCodiceGenetico.
+    - controllers/GameController.cs:
+        Propiedad publica CodiceGenetico, wiring completo, API
+        ComprarNodoCodiceGenetico(id).
+
+
+T26: BIFURCACIONES EVOLUTIVAS (Era 6+) [COMPLETADA]
+
+  Archivos nuevos:
+    - Assets/Scripts/idlesystem/data/Catalogos/CatalogoBifurcaciones.cs
+        4 bifurcaciones (una por pilar) con 2 opciones mutuamente excluyentes:
+          ATMOSFERA: Densa (proc 1.50) vs Ligera (gen 1.50)
+          OCEANOS:   Abisales (dist 1.50) vs Tropicales (gen 1.50)
+          TIERRA:    Volcanica (gen 1.50) vs Estable (proc 1.50)
+          VIDA:      Depredadora (gen 1.50) vs Cooperativa (dist 1.50)
+        Esquema [1.50, 1.00, 0.90] — crea decision estrategica real.
+
+    - Assets/Scripts/idlesystem/systems/SistemaBifurcaciones.cs
+        ISistema. Metodos Elegir, MultiplicadorEslabon, RequiereDecision,
+        HayBifurcacionPendiente. Publica EventoBifurcacionRequerida una
+        sola vez por pilar (anti-spam via HashSet interno). Se resetea en
+        cualquier prestige.
+
+  Modificaciones:
+    - utils/EventBus.cs: EventoBifurcacionRequerida nuevo
+    - systems/SistemaCadenas.cs:
+        AsignarBifurcaciones(), CalcularCapPilar aplica multiplicadores
+        por eslabon, MultiplicadorBifurcacion amplifica exceso con el
+        BonusMultiplicadoresBifurcacion genetico (cg_a7 + cg_s4).
+    - systems/SistemasSinergiaPrestige.cs (SistemaPrestige.Resetear):
+        Reset de Bifurcaciones a -1 en CUALQUIER prestige (parcial y total).
+    - systems/SistemaGuardado.cs:
+        Serializa y deserializa Bifurcaciones (pilar:opcion|).
+    - controllers/GameController.cs:
+        Propiedad Bifurcaciones, tick en ActualizarSistemas, API
+        ElegirBifurcacion(pilar, opcion).
+
+
+T27: BALANCE PASS [COMPLETADA]
+
+  Documento: BALANCE_PASS.md (raiz del proyecto)
+
+  Contenido:
+    - Resumen ejecutivo
+    - Matriz de techos acumulados end-game (multiplicadores maximos)
+    - Curva de progresion esperada (12 hitos, ~100h de longevidad)
+    - 7 riesgos detectados con estado (corregido/intencional/observacion)
+    - Lista de ajustes aplicados en esta pasada
+    - 6 TODOs pendientes que requieren playtest (no tocables sin datos)
+    - Checklist verificable del T27 original (5/12 confirmables a nivel de codigo)
+    - Inventario completo de archivos nuevos/modificados
+    - Trabajo Unity pendiente (UI de Codice Genetico, popup bifurcacion)
+
+
+RESUMEN DE ARCHIVOS:
+--------------------
+  Nuevos: 4 archivos
+    - CatalogoCodiceGenetico.cs
+    - CatalogoBifurcaciones.cs
+    - SistemaCodiceGenetico.cs
+    - SistemaBifurcaciones.cs
+    - BALANCE_PASS.md
+
+  Modificados: 9 archivos de codigo + TAREAS_ALPHA.txt
+    - Interfaces.cs (enums + TipoBonus)
+    - Definiciones.cs (2 clases)
+    - EstadoJuego.cs (1 dict)
+    - EventBus.cs (1 evento)
+    - CalculadorProduccion.cs
+    - SistemaMejoras.cs
+    - SistemaCadenas.cs
+    - SistemasSecundarios.cs (SistemaEventos)
+    - SistemasSinergiaPrestige.cs (SistemaPrestige)
+    - SistemaGuardado.cs
+    - GameController.cs
+
+
+DECISIONES DE DISENO CLAVE (hoy):
+---------------------------------
+  1. Clase DefinicionNodoCodiceGenetico separada de DefinicionNodoCodice
+     en lugar de extender la existente. Mantiene separacion limpia y
+     permite curvas/monedas distintas sin hacks.
+
+  2. EstadoNodoCodice reutilizado (misma estructura) para ahorrar
+     duplicacion. El Dict NodosCodiceGenetico es distinto pero con el
+     mismo tipo.
+
+  3. Bifurcaciones se resetean en CUALQUIER prestige (no solo BigBang),
+     porque son decisiones per-run. Solo el Codice Genetico sobrevive a
+     Extincion/Glaciacion.
+
+  4. Cap 80% en reducciones acumuladas (coste mejoras, coste cadenas)
+     para prevenir rotura economica si futuros nodos apilan mas reduccion.
+
+  5. Bonus BonusPilaresBalanceados requiere 3+ pilares dentro del 50%
+     del mayor — evita "bonus gratis" por farmear un solo pilar.
+
+  6. ReduccionReqEslabones con min 1 — previene skip total de gating.
+
+  7. Multiplicadores bifurcacion [1.50, 1.00, 0.90] — fuerza decision
+     sin ser puro bonus. El jugador DEBE compensar el eslabon debil
+     con sub-mejoras, creando tension mecanica.
+
+  8. SistemaBifurcaciones publica EventoBifurcacionRequerida UNA SOLA
+     VEZ por pilar (HashSet interno) — evita spam en EventBus.
+
+
+ESTADO DEL ALPHA:
+-----------------
+  FUNCIONAL: Todo el loop de juego implementado a nivel de codigo.
+             EV → Mejoras → Eras → Prestige (x3) → Codices (x2) →
+             Bifurcaciones → Desafios → Misiones → Automatizaciones.
+
+  PENDIENTE UNITY: UI para Codice Genetico, popup de bifurcacion,
+                   badge de 4a opcion en eventos, indicador de
+                   bifurcacion elegida por pilar.
+
+  PENDIENTE TESTING: todos los TODOs de BALANCE_PASS.md seccion 6.
+
+
+PROXIMOS PASOS SUGERIDOS (fuera de alpha):
+------------------------------------------
+  1. Build Unity del alpha y playtest interno
+  2. Ajustar balance segun telemetria (seccion 6 de BALANCE_PASS.md)
+  3. UI en Unity Editor (4 paneles/popups)
+  4. Integracion con retention analytics (metricas D1/D3/D7)
+  5. Sistema de logros de Era 6+ (10-15 nuevos)
+  6. Ampliar misiones (actualmente 30, objetivo 60+)
+
+================================================================================
+ FIN DE LA SESION — Alpha cerrado. Las 27 tareas del TAREAS_ALPHA.txt estan
+ marcadas como COMPLETADAS. El juego esta listo para pasar a fase de
+ playtest y trabajo en Unity Editor.
+================================================================================

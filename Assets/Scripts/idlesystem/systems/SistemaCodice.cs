@@ -78,6 +78,11 @@ namespace Terra.Systems
         /// </summary>
         public double ObtenerBonus(TipoBonus tipo)
         {
+            // Guardia defensiva: si aún no se ha inyectado el estado (p.ej.
+            // Cadenas/Mejoras consultándonos durante su propia AsignarEstado)
+            // devolvemos 0 en vez de NRE. La re-lectura ocurrirá en el
+            // siguiente tick cuando el estado ya esté listo.
+            if (_estado == null) return 0;
             double total = 0;
             foreach (var def in _definiciones)
             {
@@ -94,6 +99,7 @@ namespace Terra.Systems
         /// <summary>Multiplicador EV/s del Códice: producto de todos los nodos MultiplicadorEV.</summary>
         public double MultiplicadorEV()
         {
+            if (_estado == null) return 1.0;
             double mult = 1.0;
             foreach (var def in _definiciones)
             {
@@ -153,6 +159,6 @@ namespace Terra.Systems
             _porId.TryGetValue(id, out var def) ? def : null;
 
         public int NivelNodo(string id) =>
-            _estado.NodosCodice.TryGetValue(id, out var est) ? est.Nivel : 0;
+            _estado != null && _estado.NodosCodice.TryGetValue(id, out var est) ? est.Nivel : 0;
     }
 }

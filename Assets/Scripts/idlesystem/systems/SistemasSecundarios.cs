@@ -14,6 +14,7 @@ namespace Terra.Systems
     {
         private readonly DefinicionEvento[] _definiciones;
         private EstadoJuego _estado;
+        private SistemaCodiceGenetico _codiceGen;
 
         private float _timerProximoEvento;
         private const float INTERVALO_MIN = 300f;  // 5 min
@@ -25,6 +26,11 @@ namespace Terra.Systems
             _estado = estado;
             ResetearTimer();
         }
+        public void AsignarCodiceGenetico(SistemaCodiceGenetico cg) => _codiceGen = cg;
+
+        /// <summary>True si el Códice Genético ha desbloqueado la 4ª opción oculta.</summary>
+        public bool OpcionExtraDesbloqueada() =>
+            _codiceGen?.OpcionEventoExtraDesbloqueada() ?? false;
 
         public void Inicializar() { }
 
@@ -142,8 +148,16 @@ namespace Terra.Systems
             ResetearTimer();
         }
 
-        private void ResetearTimer() =>
-            _timerProximoEvento = UnityEngine.Random.Range(INTERVALO_MIN, INTERVALO_MAX);
+        private void ResetearTimer()
+        {
+            float min = INTERVALO_MIN;
+            float max = INTERVALO_MAX;
+            // Reducción cooldown (Mutación): acumulable hasta 0.45.
+            double reduccion = _codiceGen?.ReduccionCooldownEventos() ?? 0.0;
+            if (reduccion > 0.8) reduccion = 0.8;
+            float factor = (float)(1.0 - reduccion);
+            _timerProximoEvento = UnityEngine.Random.Range(min * factor, max * factor);
+        }
 
         public DefinicionEvento ObtenerEventoActivo() =>
             _estado.EventoActivoId == null ? null
